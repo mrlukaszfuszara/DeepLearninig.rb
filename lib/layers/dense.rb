@@ -1,120 +1,87 @@
 class Dense
-  def initialize(activation, size, last_size)
+  attr_reader :batch_size, :output, :weights, :delta
+
+  def initialize(batch_size, activation, last_size)
     @f = Functions.new
     @activation = activation
-    @size = size
     @last_size = last_size
+    @batch_size = batch_size
   end
 
-  def compile_data(data_x)
-    if @last_size == 0
-      @input_size = data_x.size
-      @input = data_x
-    else
-      @input_size = @size
-    end
-    
+  def compile_data
     create_weights
   end
 
-  def fit_forward(data_x)
-    if @last_size == 0
-      @input_size = data_x.size
-      @input = data_x
-    else
-      @input_size = @size
-      @input = data_x
-    end
-
-    dot_forward_data
-    apply_activation
-
-    @output
+  def prepare(data_x = nil, data_y = nil)
+    @data_x = data_x
+    @data_y = data_y
   end
 
-  def fit_backward(weights, delta, output, data_y = nil, last_layer = nil)
-    alpha = 0.01
+  def fit_forward(output = nil)
+    @data_x = output unless output.nil?
+    @output = apply_activation(calc_forward)
+  end
+
+  def fit_backward(layer = nil, output = nil, weights = nil, delta = nil)
+    @layer = layer
 
     @weights_next = weights
     @delta_next = delta
-    @output_last = output
+    @output = output
 
-    @data_y = data_y
-    @last_layer = last_layer
+    delta = 0
 
-    if last_layer
-      tmp_0 = @f.sub(@output, @data_y)
-      # tmp_0 return: Vector
-      tmp_1 = @f.mult(@weights, @output)
-      # tmp_1 return: Matrix
-      tmp_2 = apply_d(tmp_1)
-      # tmp_2 return: Matrix
-      tmp_3 = @f.dot(tmp_2, tmp_0)
-      # tmp_3 return: Vector
-      @delta = tmp_3
-    else
-      tmp_0 = @f.mult(@weights_next.transpose, @delta_next).transpose
-      # tmp_0 return: Matrix
-      tmp_1 = @f.mult(@weights, @output_last)
-      # tmp_1 return: Matrix
-      tmp_2 = apply_d(tmp_1)
-      # tmp_2 return: Matrix
-      tmp_3 = @f.dot(tmp_2, tmp_0)
-      # tmp_3 return: Vector
-      @delta = tmp_3
+    if layer == 1
+      delta = @f.subt(@output, @data_y)
+    elsif layer.zero?
+      deriv = apply_d(@output)
+      mult = @f.mult(@weights_next, @delta_next)
+      delta = @f.dot(mult.transpose, deriv)
     end
+    @delta = delta
 
-    if last_layer
-      tmp_0 = @f.mult(@delta, @f.slice_vector(@output).transpose)
-    else
-      tmp_0 = @f.mult(@delta, @f.slice_vector(@output_last).transpose)
+    if layer == 1
+      puts 'Error: ' + @f.mse_error(@output, @data_y).to_s
     end
-
-    tmp_1 = @f.mult(tmp_0, alpha)
-
-    @weights -= tmp_1
-
-    [@weights, @delta, @output]
   end
 
-
+  def update_weights(update)
+    alpha = 0.01
+    @weights = @f.subt(@weights, @f.mult(@f.mult(@output, update), alpha))
+  end
 
   private
 
   def create_weights
-    if @last_size == 0
-      @weights = @f.random_matrix_full(@input_size, @size)
-    else
-      @weights = @f.random_matrix_full(@last_size, @input_size)
-    end
+    @weights = @f.random_matrix_full(@last_size, @batch_size)
+    @weights
   end
 
-  def dot_forward_data
-    @output = @f.dot(@weights.transpose, @input)
+  def calc_forward
+    @f.dot(@weights.transpose, @data_x)
   end
 
-  def apply_activation
+  def apply_activation(layer)
     tmp = 0
     if @activation == 'sigmoid'
-      tmp = @f.sigmoid(@output)
+      tmp = @f.sigmoid(layer)
     elsif @activation == 'tanh'
-      tmp = @f.tanh(@output)
+      tmp = @f.tanh(layer)
     elsif @activation == 'relu'
-      tmp = @f.relu(@output)
+      tmp = @f.relu(layer)
     end
-    @output = tmp
+    tmp
   end
 
-  def apply_d(d)
+  def apply_d(deriv)
     tmp = 0
     if @activation == 'sigmoid'
-      tmp = @f.sigmoid_d(d)
+      tmp = @f.sigmoid_d(deriv)
     elsif @activation == 'tanh'
-      tmp = @f.tanh_d(d)
+      tmp = @f.tanh_d(deriv)
     elsif @activation == 'relu'
-      tmp = @f.relu_d(d)
+      tmp = @f.relu_d(deriv)
     end
-    output = tmp
-    output
+    tmp
   end
 end

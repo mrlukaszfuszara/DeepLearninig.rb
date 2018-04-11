@@ -9,16 +9,11 @@ class Functions
     array
   end
 
-  def sigmoid_d(matrix)
+  def sigmoid_d(vector)
     array = Array.new
     i = 0
-    while i < matrix.size
-      array[i] = []
-      j = 0
-      while j < matrix[i].size
-        array[i][j] = matrix[i][j] * (1.0 - matrix[i][j])
-        j += 1
-      end
+    while i < vector.size
+      array[i] = vector[i] * (1.0 - vector[i])
       i += 1
     end
     array
@@ -34,16 +29,11 @@ class Functions
     array
   end
 
-  def tanh_d(matrix)
+  def tanh_d(vector)
     array = Array.new
     i = 0
-    while i < matrix.size
-      array[i] = []
-      j = 0
-      while j < matrix[i].size
-        array[i][j] = Math.sinh(matrix[i][j]) / Math.cosh(matrix[i][j])
-        j += 1
-      end
+    while i < vector.size
+      array[i] = Math.sinh(vector[i]) / Math.cosh(vector[i])
       i += 1
     end
     array
@@ -63,31 +53,25 @@ class Functions
     array
   end
 
-  def relu_d(matrix)
+  def relu_d(vector)
     array = Array.new
     i = 0
-    while i < matrix.size
-      array[i] = []
-      j = 0
-      while j < matrix[i].size
-        if matrix[i][j] > 0
-          array[i][j] = 1.0
-        else
-          array[i][j] = 0.0
-        end
-          j += 1
-        end
+    while i < vector.size
+      if vector[i] > 0.0
+        array[i] = 1.0
+      else
+        array[i] = 0.0
+      end
       i += 1
     end
     array
   end
 
-  def mse_error(data, data_y)
-    array = Array.new
+  def mse_error(data_x, data_y)
     sum = 0
     i = 0
     while i < data_y.size
-      sum += (data[i] - data_y[i])**2
+      sum += (data_x[i] - data_y[i])**2
       i += 1      
     end
     sum = 0.5 * sum
@@ -221,7 +205,7 @@ class Functions
     array
   end
 
-  def sub(variable_1, variable_2)
+  def subt(variable_1, variable_2)
     one = matrix_check(variable_1)
     two = matrix_check(variable_2)
     array = Array.new

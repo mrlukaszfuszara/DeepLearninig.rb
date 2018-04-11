@@ -1,17 +1,19 @@
+
 require './lib/math'
 require './lib/layers/dense'
 require './lib/layers/dropout'
 require './lib/layers/flatten'
 
 class RuNNet
-  def initialize
+  def initialize(batch_size)
     @array_of_classes = Array.new
-    @last_size = 0
+    @first_size = batch_size
+    @last_size = batch_size
   end
 
-  def add_dense(activation, size)
-    @array_of_classes << Dense.new(activation, size, @last_size)
-    @last_size = size
+  def add_dense(batch_size, activation)
+    @array_of_classes << Dense.new(batch_size, activation, @last_size)
+    @last_size = batch_size
   end
 
   def add_dropout(rate)
@@ -22,71 +24,82 @@ class RuNNet
     @array_of_classes << Flatten.new
   end
 
-  def input(data_x, data_y, batch_size, epochs)
-    @data_x = data_x
-    @data_y = data_y
-    @batch_size = batch_size
-    @epochs = epochs
-  end
-
   def compile
     tmp = 0
-    n = 0
-    for i in @array_of_classes
-      if n == 0
-        tmp = i.compile_data(@data_x)
-      else
-        tmp = i.compile_data(tmp)
-      end
-      n +=1 
+    i = 0
+    while i < @array_of_classes.size
+      tmp = @array_of_classes[i].compile_data
+      i += 1
     end
     tmp
   end
 
-  def fit
-    tmp = Array.new
+  def fit(data_x, data_y, epochs)
+    sizes = Array.new
+    i = 0
+    while i < @array_of_classes.size
+      sizes << @array_of_classes[i].batch_size
+      i += 1
+    end
+    data_x_chunked = chunk_data_x(data_x)
     n = 0
-    while n < @epochs
-      w = Array.new
-      d = Array.new
-      o = Array.new
-      i = 0
-      while i < @array_of_classes.size
-        if i == 0
-          tmp[i] = @array_of_classes[i].fit_forward(@data_x)
-        else
-          tmp[i] = @array_of_classes[i].fit_forward(o[i - 1])
+    while n < epochs
+      m = 0
+      while m < data_x_chunked.size
+        i = 1
+        while i < @array_of_classes.size
+          @array_of_classes[i].prepare(data_x_chunked[m], data_y)
+          if i.zero?
+            @array_of_classes[i].fit_forward
+          else
+            @array_of_classes[i].fit_forward(@array_of_classes[i - 1].output)
+          end
+          i += 1
         end
-        o[i] = tmp[i]
-        i += 1
-      end
-      i = @array_of_classes.size - 1
-      while i > 0
-        if i == @array_of_classes.size - 1
-          last_layer = true
-          tmp_a = @array_of_classes[i].fit_backward(0, 0, 0, @data_y, last_layer)
-        else
-          last_layer = false
-          tmp_a = @array_of_classes[i].fit_backward(w[i + 1], d[i + 1], o[i], 0, last_layer)
+        i = @array_of_classes.size - 1
+        while i > 0
+          if i == @array_of_classes.size - 1
+            layer = 1
+            @array_of_classes[i].fit_backward(layer, @array_of_classes[i].output,
+              @array_of_classes[i].weights)
+          else
+            layer = 0
+            @array_of_classes[i].fit_backward(layer, @array_of_classes[i].output,
+              @array_of_classes[i + 1].weights, @array_of_classes[i + 1].delta)
+          end
+          i -= 1
         end
-        w[i] = tmp_a[0]
-        d[i] = tmp_a[1]
-        tmp[i] = tmp_a[2]
-        i -= 1
+        i = @array_of_classes.size - 1
+        while i > 1
+          @array_of_classes[i].update_weights(@array_of_classes[i - 1].delta)
+          i -= 1
+        end
+        m += 1
       end
       n += 1
     end
-    tmp.last
+    @array_of_classes.last.output
+  end
+
+  private
+
+  def chunk_data_x(data_x)
+    array = Array.new
+    i = 0
+    while i < data_x.size
+      array << data_x[i..(i + @first_size - 1)]
+      i += @first_size
+    end
+    array
   end
 end
 
-input = [[0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9]]
-a = RuNNet.new
-a.add_dense('sigmoid', 3)
+input = [[0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9]]
+a = RuNNet.new(2)
+a.add_dense(2, 'sigmoid')
 #a.add_dropout(0.05)
-a.add_dense('sigmoid', 4)
-a.add_dense('tanh', 3)
+a.add_dense(32, 'sigmoid')
+a.add_dense(3, 'tanh')
 #a.add_flatten
-a.input(input, [0.9, 0.5, 0.9], 25, 100)
 a.compile
-p a.fit
+p a.fit(input, [0.1, 0.1, 0.1], 100)
