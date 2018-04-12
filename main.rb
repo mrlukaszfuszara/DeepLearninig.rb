@@ -1,8 +1,6 @@
 
 require './lib/math'
 require './lib/layers/dense'
-require './lib/layers/dropout'
-require './lib/layers/flatten'
 
 class RuNNet
   def initialize(batch_size)
@@ -76,6 +74,7 @@ class RuNNet
         end
         m += 1
       end
+      puts (m * n).to_s + "/" + (epochs * data_x_chunked.size).to_s + " error: " + @array_of_classes.last.error.to_s
       n += 1
     end
     @array_of_classes.last.output
@@ -94,12 +93,12 @@ class RuNNet
   end
 end
 
-input = [[0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9]]
-a = RuNNet.new(2)
-a.add_dense(2, 'sigmoid')
-#a.add_dropout(0.05)
+#input = [[0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9]]
+f = Functions.new
+input = f.random_matrix_small(100, 30)
+a = RuNNet.new(5)
+a.add_dense(5, 'sigmoid')
 a.add_dense(32, 'sigmoid')
 a.add_dense(3, 'tanh')
-#a.add_flatten
 a.compile
-p a.fit(input, [0.1, 0.1, 0.1], 100)
+p a.fit(input, [0.5, 0.1, 0.2], 100)

@@ -133,7 +133,7 @@ class Functions
         exit 1
       end
     end
-        
+
     array
     end
 
@@ -158,6 +158,7 @@ class Functions
         exit 1
       end
     elsif one == 2 && two == 1
+      #puts "Warning: Matrix + Vector, check equation"
       if variable_1[0].size == variable_2.size
       i = 0
       while i < variable_1.size
@@ -174,6 +175,7 @@ class Functions
         exit 1
       end
     elsif one == 2 && two == 0
+      puts "Warning: Matrix + Scalar, check equation"
       i = 0
       while i < variable_1.size
         array[i] = []
@@ -196,6 +198,7 @@ class Functions
         exit 1
       end
     elsif one == 1 && two == 0
+      puts "Warning: Vector + Scalar, check equation"
       i = 0
       while i < variable_1.size
         array[i] = variable_1[i] + variable_2
@@ -226,6 +229,7 @@ class Functions
         exit 1
       end
     elsif one == 2 && two == 1
+      #puts "Warning: Matrix - Vector, check equation"
       if variable_1[0].size == variable_2.size
       i = 0
       while i < variable_1.size
@@ -242,6 +246,7 @@ class Functions
         exit 1
       end
     elsif one == 2 && two == 0
+      puts "Warning: Matrix - Scalar, check equation"
       i = 0
       while i < variable_1.size
         array[i] = []
@@ -264,6 +269,7 @@ class Functions
         exit 1
       end
     elsif one == 1 && two == 0
+      puts "Warning: Vector - Scalar, check equation"
       i = 0
       while i < variable_1.size
         array[i] = variable_1[i] - variable_2

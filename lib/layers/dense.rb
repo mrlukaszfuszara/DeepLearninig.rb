@@ -1,5 +1,5 @@
 class Dense
-  attr_reader :batch_size, :output, :weights, :delta
+  attr_reader :batch_size, :output, :weights, :delta, :error
 
   def initialize(batch_size, activation, last_size)
     @f = Functions.new
@@ -41,7 +41,7 @@ class Dense
     @delta = delta
 
     if layer == 1
-      puts 'Error: ' + @f.mse_error(@output, @data_y).to_s
+      @error = @f.mse_error(@output, @data_y)
     end
   end
 
