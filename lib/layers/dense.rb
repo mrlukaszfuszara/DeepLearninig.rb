@@ -29,16 +29,13 @@ class Dense
     @delta_next = delta
     @output = output
 
-    delta = 0
-
     if layer == 1
-      delta = @f.subt(@output, @data_y)
+      @delta = @f.subt(@output, @data_y)
     elsif layer.zero?
       deriv = apply_d(@output)
-      mult = @f.mult(@weights_next, @delta_next)
-      delta = @f.dot(mult.transpose, deriv)
+      mult = @f.mult(@weights, @output)
+      @delta = @f.dot(mult, deriv)
     end
-    @delta = delta
 
     if layer == 1
       @error = @f.mse_error(@output, @data_y)

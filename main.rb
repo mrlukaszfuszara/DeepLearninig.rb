@@ -4,7 +4,7 @@ require './lib/layers/dense'
 
 class RuNNet
   def initialize(batch_size)
-    @array_of_classes = Array.new
+    @array_of_classes = []
     @first_size = batch_size
     @last_size = batch_size
   end
@@ -12,14 +12,6 @@ class RuNNet
   def add_dense(batch_size, activation)
     @array_of_classes << Dense.new(batch_size, activation, @last_size)
     @last_size = batch_size
-  end
-
-  def add_dropout(rate)
-    @array_of_classes << Dropout.new(rate)
-  end
-
-  def add_flatten
-    @array_of_classes << Flatten.new
   end
 
   def compile
@@ -33,7 +25,7 @@ class RuNNet
   end
 
   def fit(data_x, data_y, epochs)
-    sizes = Array.new
+    sizes = []
     i = 0
     while i < @array_of_classes.size
       sizes << @array_of_classes[i].batch_size
@@ -69,7 +61,7 @@ class RuNNet
         end
         i = @array_of_classes.size - 1
         while i > 1
-          @array_of_classes[i].update_weights(@array_of_classes[i - 1].delta)
+          @array_of_classes[i].update_weights(@array_of_classes[i].delta)
           i -= 1
         end
         m += 1
@@ -83,7 +75,7 @@ class RuNNet
   private
 
   def chunk_data_x(data_x)
-    array = Array.new
+    array = []
     i = 0
     while i < data_x.size
       array << data_x[i..(i + @first_size - 1)]
@@ -93,11 +85,12 @@ class RuNNet
   end
 end
 
-#input = [[0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9]]
-f = Functions.new
-input = f.random_matrix_small(100, 30)
-a = RuNNet.new(5)
-a.add_dense(5, 'sigmoid')
+input = [[0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9]]
+#f = Functions.new
+#input = f.random_matrix_small(100, 30)
+a = RuNNet.new(2)
+a.add_dense(2, 'sigmoid')
+a.add_dense(32, 'sigmoid')
 a.add_dense(32, 'sigmoid')
 a.add_dense(3, 'tanh')
 a.compile

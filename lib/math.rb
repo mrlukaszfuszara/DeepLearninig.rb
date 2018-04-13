@@ -1,6 +1,6 @@
 class Functions
   def sigmoid(vector)
-    array = Array.new
+    array = []
     i = 0
     while i < vector.size
       array[i] = 1.0 / (1.0 + Math.exp(-vector[i]))
@@ -10,7 +10,7 @@ class Functions
   end
 
   def sigmoid_d(vector)
-    array = Array.new
+    array = []
     i = 0
     while i < vector.size
       array[i] = vector[i] * (1.0 - vector[i])
@@ -20,7 +20,7 @@ class Functions
   end
 
   def tanh(vector)
-    array = Array.new
+    array = []
     i = 0
     while i < vector.size
       array[i] = Math.tanh(vector[i])
@@ -30,7 +30,7 @@ class Functions
   end
 
   def tanh_d(vector)
-    array = Array.new
+    array = []
     i = 0
     while i < vector.size
       array[i] = Math.sinh(vector[i]) / Math.cosh(vector[i])
@@ -40,7 +40,7 @@ class Functions
   end
 
   def relu(vector)
-    array = Array.new
+    array = []
     i = 0
     while i < vector.size
       if vector[i] > 0.0
@@ -54,7 +54,7 @@ class Functions
   end
 
   def relu_d(vector)
-    array = Array.new
+    array = []
     i = 0
     while i < vector.size
       if vector[i] > 0.0
@@ -81,7 +81,7 @@ class Functions
   def dot(variable_1, variable_2)
     one = matrix_check(variable_1)
     two = matrix_check(variable_2)
-    array = Array.new
+    array = []
 
     if one == 2 && two == 2
       if variable_1[0].size == variable_2.size
@@ -140,7 +140,7 @@ class Functions
   def add(variable_1, variable_2)
     one = matrix_check(variable_1)
     two = matrix_check(variable_2)
-    array = Array.new
+    array = []
     if one == 2 && two == 2
       if variable_1[0].size == variable_2.size
       i = 0
@@ -211,7 +211,7 @@ class Functions
   def subt(variable_1, variable_2)
     one = matrix_check(variable_1)
     two = matrix_check(variable_2)
-    array = Array.new
+    array = []
     if one == 2 && two == 2
       if variable_1[0].size == variable_2.size
       i = 0
@@ -282,7 +282,7 @@ class Functions
   def mult(variable_1, variable_2)
     one = matrix_check(variable_1)
     two = matrix_check(variable_2)
-    array = Array.new
+    array = []
     if one == 2 && two == 2
       if variable_1[0].size == variable_2.size
       i = 0
@@ -349,7 +349,7 @@ class Functions
 
   def random_matrix_small(size_rows, size_cols)
     r = Random.new
-    array = Array.new
+    array = []
     i = 0
     while i < size_rows
       array[i] = []
@@ -365,7 +365,7 @@ class Functions
 
   def random_matrix_full(size_rows, size_cols)
     r = Random.new
-    array = Array.new
+    array = []
     i = 0
     while i < size_rows
       array[i] = []
@@ -380,7 +380,7 @@ class Functions
   end
 
   def slice_vector(vector)
-    array = Array.new
+    array = []
     i = 0
     while i < vector.size
       array[i] = [vector[i]]
