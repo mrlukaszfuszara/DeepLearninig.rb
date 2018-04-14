@@ -3,14 +3,15 @@ require './lib/math'
 require './lib/layers/dense'
 
 class RuNNet
-  def initialize(batch_size)
+  def initialize
     @array_of_classes = []
-    @first_size = batch_size
-    @last_size = batch_size
+    @counter = 0
   end
 
   def add_dense(batch_size, activation)
+    @last_size = batch_size if @counter.zero?
     @array_of_classes << Dense.new(batch_size, activation, @last_size)
+    @counter += 1
     @last_size = batch_size
   end
 
@@ -78,22 +79,21 @@ class RuNNet
     array = []
     i = 0
     while i < data_x.size
-      array << data_x[i..(i + @first_size - 1)]
-      i += @first_size
+      array << data_x[i..(i + @array_of_classes[0].batch_size - 1)]
+      i += @array_of_classes[0].batch_size
     end
     array
   end
 end
 
-input = [[0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9]]
-#f = Functions.new
-#input = f.random_matrix_small(100, 30)
-a = RuNNet.new(2)
-a.add_dense(2, 'sigmoid')
+#input = [[0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9]]
+f = Functions.new
+input = f.random_matrix_small(100, 30)
+a = RuNNet.new
+a.add_dense(5, 'sigmoid')
 a.add_dense(10, 'sigmoid')
 a.add_dense(32, 'sigmoid')
 a.add_dense(64, 'sigmoid')
-a.add_dense(100, 'tanh')
 a.add_dense(3, 'tanh')
 a.compile
 p a.fit(input, [0.5, 0.1, 0.2], 100)
