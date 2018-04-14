@@ -47,14 +47,14 @@ class RuNNet
           i += 1
         end
         i = @array_of_classes.size - 1
-        while i > 0
+        while i > 1
           if i == @array_of_classes.size - 1
             layer = 1
-            @array_of_classes[i].fit_backward(layer, @array_of_classes[i].output,
+            @array_of_classes[i].fit_backward(layer, @array_of_classes[i - 1].output,
               @array_of_classes[i].weights)
           else
             layer = 0
-            @array_of_classes[i].fit_backward(layer, @array_of_classes[i].output,
+            @array_of_classes[i].fit_backward(layer, @array_of_classes[i - 1].output,
               @array_of_classes[i + 1].weights, @array_of_classes[i + 1].delta)
           end
           i -= 1
@@ -90,8 +90,10 @@ input = [[0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9], [0.9, 0.5, 0.9]]
 #input = f.random_matrix_small(100, 30)
 a = RuNNet.new(2)
 a.add_dense(2, 'sigmoid')
+a.add_dense(10, 'sigmoid')
 a.add_dense(32, 'sigmoid')
-a.add_dense(32, 'sigmoid')
+a.add_dense(64, 'sigmoid')
+a.add_dense(100, 'tanh')
 a.add_dense(3, 'tanh')
 a.compile
 p a.fit(input, [0.5, 0.1, 0.2], 100)

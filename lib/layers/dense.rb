@@ -27,14 +27,14 @@ class Dense
 
     @weights_next = weights
     @delta_next = delta
-    @output = output
+    @output_last = output
 
     if layer == 1
       @delta = @f.subt(@output, @data_y)
     elsif layer.zero?
-      deriv = apply_d(@output)
+      deriv = apply_d(@output_last)
       mult = @f.mult(@weights, @output)
-      @delta = @f.dot(mult, deriv)
+      @delta = @f.dot(mult.transpose, deriv)
     end
 
     if layer == 1
@@ -44,6 +44,7 @@ class Dense
 
   def update_weights(update)
     alpha = 0.01
+
     @weights = @f.subt(@weights, @f.mult(@f.mult(@output, update), alpha))
   end
 
