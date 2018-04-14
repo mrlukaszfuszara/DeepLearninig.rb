@@ -82,6 +82,9 @@ class RuNNet
       array << data_x[i..(i + @array_of_classes[0].batch_size - 1)]
       i += @array_of_classes[0].batch_size
     end
+    if array[-1].size != array[-2].size
+      array.pop
+    end
     array
   end
 end
@@ -90,9 +93,9 @@ end
 f = Functions.new
 input = f.random_matrix_small(100, 30)
 a = RuNNet.new
-a.add_dense(5, 'sigmoid')
-a.add_dense(10, 'sigmoid')
-a.add_dense(32, 'sigmoid')
+a.add_dense(12, 'sigmoid')
+a.add_dense(16, 'sigmoid')
+a.add_dense(64, 'sigmoid')
 a.add_dense(64, 'sigmoid')
 a.add_dense(3, 'tanh')
 a.compile

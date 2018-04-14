@@ -143,39 +143,37 @@ class Functions
     array = []
     if one == 2 && two == 2
       if variable_1[0].size == variable_2.size
-      i = 0
-      while i < variable_1.size
-        array[i] = []
-        j = 0
-        while j < variable_2.size
-          array[i][j] = variable_1[i][j] + variable_2[i][j]
-          j += 1
+        i = 0
+        while i < variable_1.size
+          array[i] = []
+          j = 0
+          while j < variable_2.size
+            array[i][j] = variable_1[i][j] + variable_2[i][j]
+            j += 1
+          end
+          i += 1
         end
-        i += 1
-      end
       else
-        puts "Add Matrix + Matrix: Size error"
+        puts "Mult Matrix + Matrix: Size error"
         exit 1
       end
     elsif one == 2 && two == 1
-      #puts "Warning: Matrix + Vector, check equation"
       if variable_1[0].size == variable_2.size
-      i = 0
-      while i < variable_1.size
-        array[i] = []
-        j = 0
-        while j < variable_2.size
-          array[i][j] = variable_1[i][j] + variable_2[j]
-          j += 1
+        i = 0
+        while i < variable_1.size
+          array[i] = []
+          j = 0
+          while j < variable_2.size
+            array[i][j] = variable_1[i][j] + variable_2[j]
+            j += 1
+          end
+          i += 1
         end
-        i += 1
-      end
-     else
-        puts "Add Matrix + Vector: Size error"
+      else
+        puts "Mult Matrix + Vector: Size error"
         exit 1
       end
-    elsif one == 2 && two == 0
-      puts "Warning: Matrix + Scalar, check equation"
+    elsif one == 2 && two.zero?
       i = 0
       while i < variable_1.size
         array[i] = []
@@ -188,17 +186,16 @@ class Functions
       end
     elsif one == 1 && two == 1
       if variable_1.size == variable_2.size
-      i = 0
-      while i < variable_1.size
-        array[i] = variable_1[i] + variable_2[i]
-        i += 1
-      end
+        i = 0
+        while i < variable_1.size
+          array[i] = variable_1[i] + variable_2[i]
+          i += 1
+        end
       else
-        puts "Add Vector + Vector: Size error"
+        puts "Mult Vector + Vector: Size error"
         exit 1
       end
-    elsif one == 1 && two == 0
-      puts "Warning: Vector + Scalar, check equation"
+    elsif one == 1 && two.zero?
       i = 0
       while i < variable_1.size
         array[i] = variable_1[i] + variable_2
@@ -214,39 +211,37 @@ class Functions
     array = []
     if one == 2 && two == 2
       if variable_1[0].size == variable_2.size
-      i = 0
-      while i < variable_1.size
-        array[i] = []
-        j = 0
-        while j < variable_2.size
-          array[i][j] = variable_1[i][j] - variable_2[i][j]
-          j += 1
+        i = 0
+        while i < variable_1.size
+          array[i] = []
+          j = 0
+          while j < variable_2.size
+            array[i][j] = variable_1[i][j] - variable_2[i][j]
+            j += 1
+          end
+          i += 1
         end
-        i += 1
-      end
       else
-        puts "Sub Matrix - Matrix: Size error"
+        puts "Mult Matrix - Matrix: Size error"
         exit 1
       end
     elsif one == 2 && two == 1
-      #puts "Warning: Matrix - Vector, check equation"
       if variable_1[0].size == variable_2.size
-      i = 0
-      while i < variable_1.size
-        array[i] = []
-        j = 0
-        while j < variable_2.size
-          array[i][j] = variable_1[i][j] - variable_2[j]
-          j += 1
+        i = 0
+        while i < variable_1.size
+          array[i] = []
+          j = 0
+          while j < variable_2.size
+            array[i][j] = variable_1[i][j] - variable_2[j]
+            j += 1
+          end
+          i += 1
         end
-        i += 1
-      end
-     else
-        puts "Sub Matrix - Vector: Size error"
+      else
+        puts "Mult Matrix - Vector: Size error"
         exit 1
       end
-    elsif one == 2 && two == 0
-      puts "Warning: Matrix - Scalar, check equation"
+    elsif one == 2 && two.zero?
       i = 0
       while i < variable_1.size
         array[i] = []
@@ -259,17 +254,16 @@ class Functions
       end
     elsif one == 1 && two == 1
       if variable_1.size == variable_2.size
-      i = 0
-      while i < variable_1.size
-        array[i] = variable_1[i] - variable_2[i]
-        i += 1
-      end
+        i = 0
+        while i < variable_1.size
+          array[i] = variable_1[i] - variable_2[i]
+          i += 1
+        end
       else
-        puts "Sub Vector - Vector: Size error"
+        puts "Mult Vector - Vector: Size error"
         exit 1
       end
-    elsif one == 1 && two == 0
-      puts "Warning: Vector - Scalar, check equation"
+    elsif one == 1 && two.zero?
       i = 0
       while i < variable_1.size
         array[i] = variable_1[i] - variable_2
@@ -285,37 +279,37 @@ class Functions
     array = []
     if one == 2 && two == 2
       if variable_1[0].size == variable_2.size
-      i = 0
-      while i < variable_1.size
-        array[i] = []
-        j = 0
-        while j < variable_2.size
-          array[i][j] = variable_1[i][j] * variable_2[i][j]
-          j += 1
+        i = 0
+        while i < variable_1.size
+          array[i] = []
+          j = 0
+          while j < variable_2.size
+            array[i][j] = variable_1[i][j] * variable_2[i][j]
+            j += 1
+          end
+          i += 1
         end
-        i += 1
-      end
       else
         puts "Mult Matrix * Matrix: Size error"
         exit 1
       end
     elsif one == 2 && two == 1
       if variable_1[0].size == variable_2.size
-      i = 0
-      while i < variable_1.size
-        array[i] = []
-        j = 0
-        while j < variable_2.size
-          array[i][j] = variable_1[i][j] * variable_2[j]
-          j += 1
+        i = 0
+        while i < variable_1.size
+          array[i] = []
+          j = 0
+          while j < variable_2.size
+            array[i][j] = variable_1[i][j] * variable_2[j]
+            j += 1
+          end
+          i += 1
         end
-        i += 1
-      end
-     else
+      else
         puts "Mult Matrix * Vector: Size error"
         exit 1
       end
-    elsif one == 2 && two == 0
+    elsif one == 2 && two.zero?
       i = 0
       while i < variable_1.size
         array[i] = []
@@ -328,16 +322,16 @@ class Functions
       end
     elsif one == 1 && two == 1
       if variable_1.size == variable_2.size
-      i = 0
-      while i < variable_1.size
-        array[i] = variable_1[i] * variable_2[i]
-        i += 1
-      end
+        i = 0
+        while i < variable_1.size
+          array[i] = variable_1[i] * variable_2[i]
+          i += 1
+        end
       else
         puts "Mult Vector * Vector: Size error"
         exit 1
       end
-    elsif one == 1 && two == 0
+    elsif one == 1 && two.zero?
       i = 0
       while i < variable_1.size
         array[i] = variable_1[i] * variable_2
