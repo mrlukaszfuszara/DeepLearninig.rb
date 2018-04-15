@@ -1,85 +1,88 @@
+require './lib/layers/dense_layer'
+
 class Dense
-  attr_reader :batch_size, :output, :weights, :delta, :error
-
-  def initialize(batch_size, activation, last_size)
-    @f = Functions.new
-    @activation = activation
-    @last_size = last_size
-    @batch_size = batch_size
+  def initialize
+    @array_of_classes = []
+    @counter = 0
   end
 
-  def compile_data
-    create_weights
+  def add_dense(batch_size, activation)
+    @last_size = batch_size if @counter.zero?
+    @array_of_classes << DenseLayer.new(batch_size, activation, @last_size)
+    @counter += 1
+    @last_size = batch_size
   end
 
-  def prepare(data_x = nil, data_y = nil)
-    @data_x = data_x
-    @data_y = data_y
-  end
-
-  def fit_forward(output = nil)
-    @data_x = output unless output.nil?
-    @output = apply_activation(calc_forward)
-  end
-
-  def fit_backward(layer = nil, output = nil, weights = nil, delta = nil)
-    @layer = layer
-
-    @weights_next = weights
-    @delta_next = delta
-    @output_last = output
-
-    if layer == 1
-      @delta = @f.subt(@output, @data_y)
-    elsif layer.zero?
-      deriv = apply_d(@output_last)
-      mult = @f.mult(@weights, @output)
-      @delta = @f.dot(mult.transpose, deriv)
+  def compile
+    tmp = 0
+    i = 0
+    while i < @array_of_classes.size
+      tmp = @array_of_classes[i].compile_data
+      i += 1
     end
-
-    if layer == 1
-      @error = @f.mse_error(@output, @data_y)
-    end
+    tmp
   end
 
-  def update_weights(update)
-    alpha = 0.01
-
-    @weights = @f.subt(@weights, @f.mult(@f.mult(@output, update), alpha))
+  def fit(data_x, data_y, epochs)
+    sizes = []
+    i = 0
+    while i < @array_of_classes.size
+      sizes << @array_of_classes[i].batch_size
+      i += 1
+    end
+    data_x_chunked = chunk_data_x(data_x)
+    n = 0
+    while n < epochs
+      m = 0
+      while m < data_x_chunked.size
+        i = 1
+        while i < @array_of_classes.size
+          @array_of_classes[i].prepare(data_x_chunked[m], data_y)
+          if i.zero?
+            @array_of_classes[i].fit_forward
+          else
+            @array_of_classes[i].fit_forward(@array_of_classes[i - 1].output)
+          end
+          i += 1
+        end
+        i = @array_of_classes.size - 1
+        while i > 1
+          if i == @array_of_classes.size - 1
+            layer = 1
+            @array_of_classes[i].fit_backward(layer, @array_of_classes[i - 1].output,
+              @array_of_classes[i].weights)
+          else
+            layer = 0
+            @array_of_classes[i].fit_backward(layer, @array_of_classes[i - 1].output,
+              @array_of_classes[i + 1].weights, @array_of_classes[i + 1].delta)
+          end
+          i -= 1
+        end
+        i = @array_of_classes.size - 1
+        while i > 1
+          @array_of_classes[i].update_weights(@array_of_classes[i].delta)
+          i -= 1
+        end
+        m += 1
+      end
+      puts (m * n).to_s + "/" + (epochs * data_x_chunked.size).to_s + " error: " + @array_of_classes.last.error.to_s
+      n += 1
+    end
+    @array_of_classes.last.output
   end
 
   private
 
-  def create_weights
-    @weights = @f.random_matrix_full(@last_size, @batch_size)
-    @weights
-  end
-
-  def calc_forward
-    @f.dot(@weights.transpose, @data_x)
-  end
-
-  def apply_activation(layer)
-    tmp = 0
-    if @activation == 'sigmoid'
-      tmp = @f.sigmoid(layer)
-    elsif @activation == 'tanh'
-      tmp = @f.tanh(layer)
-    elsif @activation == 'relu'
-      tmp = @f.relu(layer)
+  def chunk_data_x(data_x)
+    array = []
+    i = 0
+    while i < data_x.size
+      array << data_x[i..(i + @array_of_classes[0].batch_size - 1)]
+      i += @array_of_classes[0].batch_size
     end
-    tmp
-  end
-
-  def apply_d(deriv)
-    tmp = 0
-    if @activation == 'sigmoid'
-      tmp = @f.sigmoid_d(deriv)
-    elsif @activation == 'tanh'
-      tmp = @f.tanh_d(deriv)
-    elsif @activation == 'relu'
-      tmp = @f.relu_d(deriv)
+    if array[-1].size != array[-2].size
+      array.pop
     end
-    tmp
+    array
   end
 end
