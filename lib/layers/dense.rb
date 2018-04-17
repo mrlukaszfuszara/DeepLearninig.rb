@@ -35,11 +35,10 @@ class Dense
     while n < epochs
       m = 0
       while m < data_x_chunked.size
-        i = 1
+        i = 0
         while i < @array_of_classes.size
-          @array_of_classes[i].prepare(data_x_chunked[m], data_y)
           if i.zero?
-            @array_of_classes[i].fit_forward
+            @array_of_classes[i].fit_forward(data_x_chunked[m])
           else
             @array_of_classes[i].fit_forward(@array_of_classes[i - 1].output)
           end
@@ -49,11 +48,11 @@ class Dense
         while i > 1
           if i == @array_of_classes.size - 1
             layer = 1
-            @array_of_classes[i].fit_backward(layer, @array_of_classes[i - 1].output,
+            @array_of_classes[i].fit_backward(layer, data_y, @array_of_classes[i - 1].output,
               @array_of_classes[i].weights)
           else
             layer = 0
-            @array_of_classes[i].fit_backward(layer, @array_of_classes[i - 1].output,
+            @array_of_classes[i].fit_backward(layer, nil, @array_of_classes[i - 1].output,
               @array_of_classes[i + 1].weights, @array_of_classes[i + 1].delta)
           end
           i -= 1
@@ -77,12 +76,12 @@ class Dense
     array = []
     i = 0
     while i < data_x.size
-      array << data_x[i..(i + @array_of_classes[0].batch_size - 1)]
+      array << data_x[i...(i + @array_of_classes[0].batch_size)]
       i += @array_of_classes[0].batch_size
     end
     if array[-1].size != array[-2].size
       array.pop
     end
-    array
+    array[0].transpose
   end
 end

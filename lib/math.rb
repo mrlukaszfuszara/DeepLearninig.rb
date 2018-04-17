@@ -33,7 +33,7 @@ class Functions
     array = []
     i = 0
     while i < vector.size
-      array[i] = Math.sinh(vector[i]) / Math.cosh(vector[i])
+      array[i] = 1.0 - vector[i]**2
       i += 1
     end
     array

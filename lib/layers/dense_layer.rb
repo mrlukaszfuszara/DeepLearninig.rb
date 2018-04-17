@@ -12,17 +12,12 @@ class DenseLayer
     create_weights
   end
 
-  def prepare(data_x = nil, data_y = nil)
-    @data_x = data_x
-    @data_y = data_y
-  end
-
   def fit_forward(output = nil)
-    @data_x = output unless output.nil?
-    @output = apply_activation(calc_forward)
+    @output = apply_activation(output)
+    @output = calc_forward
   end
 
-  def fit_backward(layer = nil, output = nil, weights = nil, delta = nil)
+  def fit_backward(layer = nil, data_y = nil, output = nil, weights = nil, delta = nil)
     @layer = layer
 
     @weights_next = weights
@@ -30,20 +25,18 @@ class DenseLayer
     @output_last = output
 
     if layer == 1
-      @delta = @f.subt(@output, @data_y)
+      @error = @f.mse_error(@output, data_y)
+      
+      @delta = @f.subt(@output, data_y)
     elsif layer.zero?
       deriv = apply_d(@output_last)
       mult = @f.mult(@weights, @output)
       @delta = @f.dot(mult.transpose, deriv)
     end
-
-    if layer == 1
-      @error = @f.mse_error(@output, @data_y)
-    end
   end
 
   def update_weights(update)
-    alpha = 0.01
+    alpha = 0.00001
 
     @weights = @f.subt(@weights, @f.mult(@f.mult(@output, update), alpha))
   end
@@ -56,7 +49,7 @@ class DenseLayer
   end
 
   def calc_forward
-    @f.dot(@weights.transpose, @data_x)
+    @f.dot(@weights.transpose, @output)
   end
 
   def apply_activation(layer)
