@@ -23,7 +23,7 @@ class Dense
     tmp
   end
 
-  def fit(data_x, data_y, epochs)
+  def fit(data_x, data_y, epochs, alpha)
     sizes = []
     i = 0
     while i < @array_of_classes.size
@@ -40,18 +40,18 @@ class Dense
           if i.zero?
             @array_of_classes[i].fit_forward(data_x_chunked[m])
           else
-            @array_of_classes[i].fit_forward(@array_of_classes[i - 1].output)
+            @array_of_classes[i].fit_forward(@array_of_classes[i - 1].output_forward)
           end
           i += 1
         end
         i = @array_of_classes.size - 1
         while i > 1
           if i == @array_of_classes.size - 1
-            layer = 1
+            layer = true
             @array_of_classes[i].fit_backward(layer, data_y, @array_of_classes[i - 1].output,
               @array_of_classes[i].weights)
           else
-            layer = 0
+            layer = false
             @array_of_classes[i].fit_backward(layer, nil, @array_of_classes[i - 1].output,
               @array_of_classes[i + 1].weights, @array_of_classes[i + 1].delta)
           end
@@ -59,12 +59,12 @@ class Dense
         end
         i = @array_of_classes.size - 1
         while i > 1
-          @array_of_classes[i].update_weights(@array_of_classes[i].delta)
+          @array_of_classes[i].update_weights(@array_of_classes[i].delta, alpha)
           i -= 1
         end
         m += 1
       end
-      puts (m * n).to_s + "/" + (epochs * data_x_chunked.size).to_s + " error: " + @array_of_classes.last.error.to_s
+      puts (m * n).to_s + '/' + (epochs * data_x_chunked.size).to_s + ' error: ' + @array_of_classes.last.error.to_s
       n += 1
     end
     @array_of_classes.last.output

@@ -154,7 +154,7 @@ class Functions
           i += 1
         end
       else
-        puts "Mult Matrix + Matrix: Size error"
+        puts "Add Matrix + Matrix: Size error"
         exit 1
       end
     elsif one == 2 && two == 1
@@ -170,7 +170,7 @@ class Functions
           i += 1
         end
       else
-        puts "Mult Matrix + Vector: Size error"
+        puts "Add Matrix + Vector: Size error"
         exit 1
       end
     elsif one == 2 && two.zero?
@@ -192,7 +192,7 @@ class Functions
           i += 1
         end
       else
-        puts "Mult Vector + Vector: Size error"
+        puts "Add Vector + Vector: Size error"
         exit 1
       end
     elsif one == 1 && two.zero?
@@ -222,7 +222,7 @@ class Functions
           i += 1
         end
       else
-        puts "Mult Matrix - Matrix: Size error"
+        puts "Subt Matrix - Matrix: Size error"
         exit 1
       end
     elsif one == 2 && two == 1
@@ -238,7 +238,7 @@ class Functions
           i += 1
         end
       else
-        puts "Mult Matrix - Vector: Size error"
+        puts "Subt Matrix - Vector: Size error"
         exit 1
       end
     elsif one == 2 && two.zero?
@@ -260,7 +260,7 @@ class Functions
           i += 1
         end
       else
-        puts "Mult Vector - Vector: Size error"
+        puts "Subt Vector - Vector: Size error"
         exit 1
       end
     elsif one == 1 && two.zero?
