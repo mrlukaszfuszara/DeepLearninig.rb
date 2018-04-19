@@ -1,4 +1,4 @@
-class LSTMLayer
+class GRULayer
   attr_reader :output
 
   def initialize(batch_size)
@@ -11,15 +11,15 @@ class LSTMLayer
   end
 
   def fit_forward(input = nil)
-    conc = calc_forward(input)
-    layer_1_2_4 = apply_activation(conc, 'sigmoid')
-    layer_3 = apply_activation(conc, 'tanh')
-    step1 = @f.mult(@memory, layer_1_2_4)
-    step2 = @f.mult(layer_1_2_4, layer_3)
-    step3 = @f.add(step1, step2)
-    @memory = step3
-    step4 = apply_activation(step3, 'tanh')
-    @weights = @f.mult(layer_1_2_4, step4)
+    conc1 = calc_forward(input)
+    layer_1_2 = apply_activation(conc1, 'sigmoid')
+    step1 = @f.mult(@weights, layer_1_2)
+    conc2 = @f.add(step1, input)
+    layer_3 = apply_activation(conc2, 'tanh')
+    step2 = @f.subt(layer_1_2, 1.0)
+    step3 = @f.mult(@weights, step2)
+    step4 = @f.mult(layer_1_2, layer_3)
+    @weights = @f.add(step3, step4)
     @output = @weights
   end
 
