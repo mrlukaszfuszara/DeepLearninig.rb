@@ -14,18 +14,18 @@ class Main
     rnn = r.fit(data_x)
     d1 = Dense.new
     d1.add_dense(batch_size / 6, 'sigmoid')
-    d1.add_dense(256, 'sigmoid')
+    d1.add_dense(24, 'sigmoid')
+	  d1.add_dense(12, 'sigmoid')
     d1.add_dense(3, 'relu')
     d1.compile
     @output = d1.fit(rnn, data_y, epochs, alpha)
   end
 end
 
-f = Functions.new
-data_x = f.random_matrix_small(100, 12)
-data_y = [0.9, 0.2, 0.9]
-epochs = 100
+data_x = [[0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9], [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9]]
+data_y = [0.1, 0.9, 0.1]
+epochs = 300
 batch_size = data_x[0].size
-alpha = 0.00001
+alpha = 0.0001
 
 p Main.new(batch_size, data_x, data_y, epochs, alpha).output

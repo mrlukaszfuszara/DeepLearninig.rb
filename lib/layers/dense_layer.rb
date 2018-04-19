@@ -1,5 +1,5 @@
 class DenseLayer
-  attr_reader :batch_size, :output_forward, :output, :weights, :delta, :error
+  attr_reader :batch_size, :output, :weights, :delta, :error
 
   def initialize(batch_size, activation, last_size)
     @f = Functions.new
@@ -13,11 +13,11 @@ class DenseLayer
   end
 
   def fit_forward(input = nil)
-    @output_forward = apply_activation(input)
-    @output_forward = calc_forward
+    @output = apply_activation(input)
+    @output = calc_forward
   end
 
-  def fit_backward(layer = nil, data_y = nil, output = nil, weights = nil, delta = nil)
+  def fit_backward(layer = nil, data_y = nil, output = nil, weights = nil, delta = nil)  	
     @layer = layer
 
     @weights_next = weights
@@ -25,19 +25,17 @@ class DenseLayer
     @output_last = output
 
     if layer
-      @error = @f.mse_error(@output_forward, data_y)
-      @delta = @f.subt(@output_forward, data_y)
+      @error = @f.mse_error(@output, data_y)
+      @delta = @f.subt(@output, data_y)
     else
       deriv = apply_d(@output_last)
-      mult = @f.mult(@weights, @output_forward)
+      mult = @f.mult(@weights, @output)
       @delta = @f.dot(mult.transpose, deriv)
     end
   end
 
   def update_weights(update, alpha)
-    @weights = @f.subt(@weights, @f.mult(@f.mult(@output_forward, update), alpha))
-
-    @output = @output_forward
+    @weights = @f.subt(@weights, @f.mult(@f.mult(@output, update), alpha))
   end
 
   private
@@ -47,7 +45,7 @@ class DenseLayer
   end
 
   def calc_forward
-    @f.dot(@weights.transpose, @output_forward)
+    @f.dot(@weights.transpose, @output)
   end
 
   def apply_activation(layer)

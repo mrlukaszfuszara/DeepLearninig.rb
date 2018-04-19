@@ -34,7 +34,7 @@ class Dense
           if i.zero?
             @array_of_classes[i].fit_forward(data_x_chunked[m])
           else
-            @array_of_classes[i].fit_forward(@array_of_classes[i - 1].output_forward)
+            @array_of_classes[i].fit_forward(@array_of_classes[i - 1].output)
           end
           i += 1
         end
