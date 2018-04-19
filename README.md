@@ -14,8 +14,8 @@ Method initialize
 Class Functions
 Mathematics and Utils library
 
-data_x - input matrix
-data_y - backpropagation matrix with optimal parameters for neural network
-epochs - forward and backward step for all samples
-batch_size - initial size of input matrix
-alpha - learning rate for optimizer
+* data_x - input matrix
+* data_y - backpropagation matrix with optimal parameters for neural network
+* epochs - forward and backward step for all samples
+* batch_size - initial size of input matrix
+* alpha - learning rate for optimizer
