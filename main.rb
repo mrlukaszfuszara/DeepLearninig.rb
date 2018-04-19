@@ -22,7 +22,7 @@ end
 
 f = Functions.new
 data_x = f.random_matrix_small(100, 12)
-data_y = [0.9, 0.4, 0.9]
+data_y = [0.9, 0.2, 0.9]
 epochs = 100
 batch_size = data_x[0].size
 alpha = 0.00001

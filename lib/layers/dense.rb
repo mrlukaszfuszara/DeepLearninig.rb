@@ -24,12 +24,6 @@ class Dense
   end
 
   def fit(data_x, data_y, epochs, alpha)
-    sizes = []
-    i = 0
-    while i < @array_of_classes.size
-      sizes << @array_of_classes[i].batch_size
-      i += 1
-    end
     data_x_chunked = chunk_data_x(data_x)
     n = 0
     while n < epochs
