@@ -10,7 +10,7 @@ class RNN
     @nn.compile_data
   end
 
-  def fit(data_x, data_y, alpha)
+  def fit(data_x)
     if @full_weights
       tmp = []
       i = 0
