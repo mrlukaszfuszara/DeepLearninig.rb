@@ -12,7 +12,7 @@ class RNNLayer
 
   def fit_forward(input = nil)
     @output = calc_forward(input)
-    @output = apply_activation(output)
+    @output = apply_activation(@output)
   end
 
   def create_weights

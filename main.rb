@@ -2,15 +2,16 @@ require './lib/math'
 
 require './lib/layers/dense'
 require './lib/layers/rnn'
+require './lib/layers/lstm'
 
 class Main
   attr_reader :output
 
   def initialize(batch_size, data_x, data_y, epochs, alpha)
-    r = RNN.new
+    r = LSTM.new
     r.add_rnn(batch_size, true)
     r.compile
-    rnn = r.fit(data_x, data_y, alpha)
+    rnn = r.fit(data_x)
     d1 = Dense.new
     d1.add_dense(batch_size / 6, 'sigmoid')
     d1.add_dense(256, 'sigmoid')

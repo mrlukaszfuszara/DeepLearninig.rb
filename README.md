@@ -1,9 +1,10 @@
 # RuNNet
 Ruby Neural Networks 
 
-Class Main 
+Class Main
+
 Method initialize
-* There are definied architecture of neural network.
+* There is definied architecture of neural network.
 * Available layers: Dense, RNN
 * Available activation functions: sigmoid, tanh, relu
 * Available loss functions: MSE
@@ -12,8 +13,10 @@ Method initialize
 * RNN: add_rnn. This method get two parameters: number of vectors in X matrix and return of RNN (if true all weights, if false only last weight)
 
 Class Functions
+
 Mathematics and Utils library
 
+Other
 * data_x - input matrix
 * data_y - backpropagation matrix with optimal parameters for neural network
 * epochs - forward and backward step for all samples
