@@ -12,8 +12,8 @@ class DenseLayer
     create_weights
   end
 
-  def fit_forward(output = nil)
-    @output_forward = apply_activation(output)
+  def fit_forward(input = nil)
+    @output_forward = apply_activation(input)
     @output_forward = calc_forward
   end
 
@@ -44,7 +44,6 @@ class DenseLayer
 
   def create_weights
     @weights = @f.random_matrix_full(@last_size, @batch_size)
-    @weights
   end
 
   def calc_forward

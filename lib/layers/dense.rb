@@ -46,6 +46,7 @@ class Dense
         end
         i = @array_of_classes.size - 1
         while i > 1
+          layer = false
           if i == @array_of_classes.size - 1
             layer = true
             @array_of_classes[i].fit_backward(layer, data_y, @array_of_classes[i - 1].output,

@@ -373,6 +373,28 @@ class Functions
     array
   end
 
+  def random_vector_small(size_rows)
+    r = Random.new
+    array = []
+    i = 0
+    while i < size_rows
+      array[i] = r.rand(0.0..0.1)
+      i += 1
+    end
+    array
+  end
+
+  def random_vector_full(size_rows)
+    r = Random.new
+    array = []
+    i = 0
+    while i < size_rows
+      array[i] = r.rand(0.0..1.0)
+      i += 1
+    end
+    array
+  end
+
   def slice_vector(vector)
     array = []
     i = 0
