@@ -2,7 +2,10 @@ class DenseLayer
   attr_reader :batch_size, :output, :weights, :delta, :error
 
   def initialize(batch_size, activation, last_size)
-    @f = Functions.new
+    @mm = MatrixMath.new
+    @a = Activations.new
+    @c = Costs.new
+    @g = Generators.new
     @activation = activation
     @last_size = last_size
     @batch_size = batch_size
@@ -25,37 +28,40 @@ class DenseLayer
     @output_last = output
 
     if layer
-      @error = @f.mse_error(@output, data_y)
-      @delta = @f.subt(@output, data_y)
+      @error = @c.quadratic_cost(data_y, @output)
+      @delta = @mm.subt(@output, data_y)
     else
-      deriv = apply_d(@output_last)
-      mult = @f.mult(@weights, @output)
-      @delta = @f.dot(mult.transpose, deriv)
+      mult = @mm.dot(@weights_next, @delta_next)
+      deriv = apply_d(@output)
+      @delta = @mm.mult(mult, deriv)
     end
+    @delta_weights = @mm.div(@mm.mult(@delta, @output), @output.size)
   end
 
-  def update_weights(update, alpha)
-    @weights = @f.subt(@weights, @f.mult(@f.mult(@output, update), alpha))
+  def update_weights(alpha)
+    @weights = @mm.subt(@weights, @mm.mult(@mm.mult([@output], @delta_weights)[0], alpha))
   end
 
   private
 
   def create_weights
-    @weights = @f.random_matrix_full(@last_size, @batch_size)
+    @weights = @g.random_matrix(@last_size, @batch_size, 0.0..1.0)
   end
 
   def calc_forward
-    @f.dot(@weights.transpose, @output)
+    @mm.dot(@weights.transpose, @output)
   end
 
   def apply_activation(layer)
     tmp = 0
     if @activation == 'sigmoid'
-      tmp = @f.sigmoid(layer)
+      tmp = @a.sigmoid(layer)
     elsif @activation == 'tanh'
-      tmp = @f.tanh(layer)
+      tmp = @a.tanh(layer)
     elsif @activation == 'relu'
-      tmp = @f.relu(layer)
+      tmp = @a.relu(layer)
+    elsif @activation == 'leaky_relu'
+      tmp = @a.leaky_relu(layer)
     end
     tmp
   end
@@ -63,11 +69,13 @@ class DenseLayer
   def apply_d(deriv)
     tmp = 0
     if @activation == 'sigmoid'
-      tmp = @f.sigmoid_d(deriv)
+      tmp = @a.sigmoid_d(deriv)
     elsif @activation == 'tanh'
-      tmp = @f.tanh_d(deriv)
+      tmp = @a.tanh_d(deriv)
     elsif @activation == 'relu'
-      tmp = @f.relu_d(deriv)
+      tmp = @a.relu_d(deriv)
+    elsif @activation == 'leaky_relu'
+      tmp = @a.leaky_relu_d(deriv)
     end
     tmp
   end
