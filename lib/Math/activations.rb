@@ -32,7 +32,7 @@ class Activations
         array[i] = []
         j = 0
         while j < vector[i].size
-          array[i][j] = vector[i] * (1.0 - vector[i][j])
+          array[i][j] = vector[i][j] * (1.0 - vector[i][j])
           j += 1
         end
         i += 1

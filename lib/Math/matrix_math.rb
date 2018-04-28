@@ -10,12 +10,12 @@ class MatrixMath
     two = matrix_check(variable2)
     array = []
     if one == 2 && two == 2
-      if variable1[0].size == variable2.size
+      if variable1.size == variable2.size && variable1[0].size == variable2[0].size
         i = 0
         while i < variable1.size
           array[i] = []
           j = 0
-          while j < variable2.size
+          while j < variable1[0].size
             array[i][j] = variable1[i][j] + variable2[i][j]
             j += 1
           end
@@ -23,7 +23,6 @@ class MatrixMath
         end
       else
         puts 'Add Matrix + Matrix: Size error'
-        exit 1
       end
     elsif one == 2 && two == 1
       if variable1[0].size == variable2.size
@@ -39,7 +38,6 @@ class MatrixMath
         end
       else
         puts 'Add Matrix + Vector: Size error'
-        exit 1
       end
     elsif one == 2 && two.zero?
       i = 0
@@ -61,7 +59,6 @@ class MatrixMath
         end
       else
         puts 'Add Vector + Vector: Size error'
-        exit 1
       end
     elsif one == 1 && two.zero?
       i = 0
@@ -78,12 +75,12 @@ class MatrixMath
     two = matrix_check(variable2)
     array = []
     if one == 2 && two == 2
-      if variable1[0].size == variable2.size
+      if variable1.size == variable2.size && variable1[0].size == variable2[0].size
         i = 0
         while i < variable1.size
           array[i] = []
           j = 0
-          while j < variable2.size
+          while j < variable1[0].size
             array[i][j] = variable1[i][j] - variable2[i][j]
             j += 1
           end
@@ -91,7 +88,6 @@ class MatrixMath
         end
       else
         puts 'Subt Matrix - Matrix: Size error'
-        exit 1
       end
     elsif one == 2 && two == 1
       if variable1[0].size == variable2.size
@@ -107,7 +103,6 @@ class MatrixMath
         end
       else
         puts 'Subt Matrix - Vector: Size error'
-        exit 1
       end
     elsif one == 2 && two.zero?
       i = 0
@@ -129,7 +124,6 @@ class MatrixMath
         end
       else
         puts 'Subt Vector - Vector: Size error'
-        exit 1
       end
     elsif one == 1 && two.zero?
       i = 0
@@ -146,12 +140,12 @@ class MatrixMath
     two = matrix_check(variable2)
     array = []
     if one == 2 && two == 2
-      if variable1[0].size == variable2.size
+      if variable1.size == variable2.size && variable1[0].size == variable2[0].size
         i = 0
         while i < variable1.size
           array[i] = []
           j = 0
-          while j < variable2.size
+          while j < variable1[0].size
             array[i][j] = variable1[i][j] * variable2[i][j]
             j += 1
           end
@@ -159,7 +153,6 @@ class MatrixMath
         end
       else
         puts 'Mult Matrix * Matrix: Size error'
-        exit 1
       end
     elsif one == 2 && two == 1
       if variable1[0].size == variable2.size
@@ -175,7 +168,6 @@ class MatrixMath
         end
       else
         puts 'Mult Matrix * Vector: Size error'
-        exit 1
       end
     elsif one == 2 && two.zero?
       i = 0
@@ -197,7 +189,6 @@ class MatrixMath
         end
       else
         puts 'Mult Vector * Vector: Size error'
-        exit 1
       end
     elsif one == 1 && two.zero?
       i = 0
@@ -223,7 +214,7 @@ class MatrixMath
         array[i] = []
         j = 0
         while j < variable1[i].size
-          array[i][j] = variable1[i][j] + variable2
+          array[i][j] = variable1[i][j] / variable2
           j += 1
         end
         i += 1
@@ -233,7 +224,7 @@ class MatrixMath
     elsif one == 1 && two.zero?
       i = 0
       while i < variable1.size
-        array[i] = variable1[i] + variable2
+        array[i] = variable1[i] /+ variable2
         i += 1
       end
     end
@@ -244,27 +235,25 @@ class MatrixMath
     one = matrix_check(variable1)
     two = matrix_check(variable2)
     array = []
-
     if one == 2 && two == 2
       if variable1[0].size == variable2.size
         i = 0
         while i < variable1.size
+          array[i] = []
           j = 0
           while j < variable2[0].size
-            tmp = 0
+            array[i][j] = 0
             k = 0
             while k < variable1[0].size
-              tmp += variable1[i][k] * variable2[k][j]
+              array[i][j] += variable1[i][k] * variable2[k][j]
               k += 1
             end
             j += 1
           end
-          array[i] = tmp
           i += 1
         end
       else
         puts 'Dot Matrix @ Matrix: Size error'
-        exit 1
       end
     elsif one == 2 && two == 1
       if  variable1[0].size == variable2.size
@@ -280,7 +269,6 @@ class MatrixMath
         end
       else
         puts 'Dot Matrix @ Vector: Size error'
-        exit 1
       end
     elsif one == 1 && two == 1
       if variable1.size == variable2.size
@@ -292,8 +280,22 @@ class MatrixMath
         end
       else
         puts 'Dot Vector @ Vector: Size error'
-        exit 1
       end
+    end
+    array
+  end
+
+  def vertical_sum(matrix)
+    array = []
+    i = 0
+    while i < matrix.size
+      array[i] = 0
+      j = 0
+      while j < matrix[i].size
+        array[i] += matrix[i][j]
+        j += 1
+      end
+      i += 1
     end
     array
   end
