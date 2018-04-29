@@ -38,7 +38,7 @@ class NN
     end
   end
 
-  def fit(data_x, data_y, cost_function, alpha, epochs, regularization_l2 = nil)
+  def fit(train_data_x, train_data_y, cost_function, alpha, epochs, regularization_l2 = nil)
     @regularization_l2 = regularization_l2
     epochs.times do
       @array_of_z = []
@@ -49,12 +49,12 @@ class NN
       @array_of_delta_w = []
       @array_of_delta_b = []
 
-      fit_forward(data_x, 0)
+      fit_forward(train_data_x, 0)
       i = 1
       while i < @array_of_layers.size - 1
         fit_forward(@array_of_z[i - 1], i)
         if i == @array_of_layers.size - 2
-          puts 'Error: ' + apply_cost(cost_function, @array_of_a[i], data_y, i).to_s
+          puts 'Error: ' + apply_cost(cost_function, @array_of_a[i].flatten, train_data_y, i).to_s
         end
         i += 1
       end
@@ -82,7 +82,7 @@ class NN
       end
       i = @array_of_layers.size - 1
       while i > 1
-        fit_backward_step_one(i, data_y)
+        fit_backward_step_one(i, train_data_y)
         i -= 1
       end
       i = @array_of_layers.size - 1
@@ -106,7 +106,7 @@ class NN
     @array_of_bias = Marshal.load File.open(path + '_b.msh', 'rb')
   end
 
-  def predict(dev_data_x, dev_data_y, cost_function, regularization_l2)
+  def predict(dev_data_x, dev_data_y, cost_function, regularization_l2 = nil)
     @regularization_l2 = regularization_l2
     @array_of_z = []
     @array_of_a = []
@@ -115,7 +115,7 @@ class NN
     while i < @array_of_layers.size - 1
       fit_forward(@array_of_z[i - 1], i)
       if i == @array_of_layers.size - 2
-        puts 'Error: ' + apply_cost(cost_function, @array_of_a[i], dev_data_y, i).to_s
+        puts 'Error: ' + apply_cost(cost_function, @array_of_a[i].flatten, dev_data_y, i).to_s
       end
       i += 1
     end
