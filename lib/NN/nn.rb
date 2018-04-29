@@ -36,7 +36,8 @@ class NN
     end
   end
 
-  def fit(data_x, data_y, cost_function, alpha, epochs)
+  def fit(data_x, data_y, cost_function, alpha, epochs, regularization_l2 = nil)
+    @regularization_l2 = regularization_l2
     epochs.times do
       @array_of_z = []
       @array_of_a = []
@@ -50,11 +51,13 @@ class NN
       i = 1
       while i < @array_of_layers.size - 1
         fit_forward(@array_of_z[i - 1], i)
-        p apply_cost(cost_function, @array_of_a[i], data_y) if i == @array_of_layers.size - 2
+        if i == @array_of_layers.size - 2
+          puts 'Error: ' + apply_cost(cost_function, @array_of_a[i], data_y, i).to_s
+        end
         i += 1
       end
       i = @array_of_layers.size - 1
-      while i > 0
+      while i > 1
         fit_backward_step_one(i, data_y)
         i -= 1
       end
@@ -89,8 +92,12 @@ class NN
     @array_of_delta_a[counter] = @mm.subt(@array_of_a[counter - 1], data_y) if counter == @array_of_layers.size - 1
     @array_of_delta_z[counter] = @mm.mult(@array_of_delta_a[counter], apply_d(@array_of_z[counter - 1], counter))
     @array_of_delta_a[counter - 1] = @mm.dot(@array_of_weights[counter - 1].transpose, @array_of_delta_z[counter])
-
-    @array_of_delta_w[counter] = @mm.mult(@mm.dot(@array_of_delta_z[counter], @array_of_a[counter - 2].transpose), (1.0 / @samples)) #/
+    if !@regularization_l2.nil?
+      tmp = @mm.mult(@mm.dot(@array_of_delta_z[counter], @array_of_a[counter - 2].transpose), (1.0 / @samples)) #/
+      @array_of_delta_w[counter] = @mm.add(tmp, @mm.mult(@array_of_weights[counter - 1], (@regularization_l2 / @samples))) #/
+    else
+      @array_of_delta_w[counter] = @mm.mult(@mm.dot(@array_of_delta_z[counter], @array_of_a[counter - 2].transpose), (1.0 / @samples)) #/
+    end
     @array_of_delta_b[counter] = @mm.mult(@mm.horizontal_sum(@array_of_delta_z[counter]), (1.0 / @samples)) #/
   end
 
@@ -99,14 +106,23 @@ class NN
     @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @array_of_delta_b[counter + 1])
   end
 
-  def apply_cost(cost_function,data_x, data_y)
-    tmp = 0
-    if cost_function == 'mse'
-      tmp = @c.quadratic_cost(@array_of_a.last.flatten, data_y, data_x.size)
-    elsif cost_function == 'cross_entropy'
-      tmp = @c.cross_entropy_cost(@array_of_a.last.flatten, data_y, data_x.size)
+  def apply_cost(cost_function, data_x, data_y, counter)
+    tmp1 = 0
+    if !@regularization_l2.nil?
+      tmp2 = @mm.f_norm(@array_of_weights[counter])
+      if cost_function == 'mse'
+        tmp1 = @c.quadratic_cost_with_r(@array_of_a.last.flatten, data_y, data_x.size, @regularization_l2, tmp2)
+      elsif cost_function == 'cross_entropy'
+        tmp1 = @c.cross_entropy_cost_with_r(@array_of_a.last.flatten, data_y, data_x.size, @regularization_l2, tmp2)
+      end
+    else
+      if cost_function == 'mse'
+        tmp1 = @c.quadratic_cost(@array_of_a.last.flatten, data_y, data_x.size)
+      elsif cost_function == 'cross_entropy'
+        tmp1 = @c.cross_entropy_cost(@array_of_a.last.flatten, data_y, data_x.size)
+      end
     end
-    tmp
+    tmp1
   end
 
   def apply_a(z, counter)

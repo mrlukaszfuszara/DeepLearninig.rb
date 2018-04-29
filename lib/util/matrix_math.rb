@@ -5,6 +5,23 @@ class MatrixMath
     [s0, s1]
   end
 
+  def f_norm(matrix)
+    sum = 0
+    array = []
+    i = 0
+    while i < matrix.size
+      array[i] = 0
+      j = 0
+      while j < matrix[i].size
+        array[i] += matrix[i][j]**2
+        j += 1
+      end
+      sum += array[i]
+      i += 1
+    end
+    sum
+  end
+
   def add(variable1, variable2)
     one = matrix_check(variable1)
     two = matrix_check(variable2)
