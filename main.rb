@@ -8,9 +8,7 @@ require './lib/util/costs'
 require './lib/nn/nn'
 
 class Main
-  attr_reader :output
-
-  def initialize(data_x, data_y, cost_function, learning_rate, epochs, regularization_l2)
+  def train(data_x, data_y, cost_function, learning_rate, epochs, regularization_l2)
     nn = NN.new(data_x[0].size)
     nn.add_nn(6, 'leaky_relu')
     nn.add_nn(12, 'leaky_relu')
@@ -18,7 +16,21 @@ class Main
     nn.add_nn(12, 'leaky_relu')
     nn.add_nn(1, 'leaky_relu')
     nn.compile(data_x.size)
-    @output = nn.fit(data_x, data_y, cost_function, learning_rate, epochs, regularization_l2)
+    tmp = nn.fit(data_x, data_y, cost_function, learning_rate, epochs, regularization_l2)
+    nn.save_weights('./test')
+    tmp
+  end
+
+  def predict(data_x, data_y, cost_function)
+    nnt = NN.new(data_x[0].size)
+    nnt.add_nn(6, 'leaky_relu')
+    nnt.add_nn(12, 'leaky_relu')
+    nnt.add_nn(24, 'leaky_relu')
+    nnt.add_nn(12, 'leaky_relu')
+    nnt.add_nn(1, 'leaky_relu')
+    nnt.load_weights('./test')
+    tmp = nnt.predict(data_x, data_y, cost_function)
+    tmp
   end
 end
 
@@ -41,7 +53,10 @@ test_set_y = test_set[1]
 
 cost_function = 'mse'
 learning_rate = 0.1
-epochs = 100
+epochs = 1000
 regularization_l2 = 0.1
 
-p Main.new(train_set_x, train_set_y, cost_function, learning_rate, epochs, regularization_l2).output
+main = Main.new
+main.train(train_set_x, train_set_y, cost_function, learning_rate, epochs, regularization_l2)
+
+p main.predict(dev_set_x, dev_set_y, cost_function)

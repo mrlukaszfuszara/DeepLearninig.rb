@@ -1,7 +1,7 @@
 class NN
   attr_reader :error
 
-  def initialize(data_x_size)
+  def initialize(data_x_size = nil, weights = nil)
     @mm = MatrixMath.new
     @g = Generators.new
     @a = Activations.new
@@ -31,7 +31,7 @@ class NN
     end
     i = 0
     while i < @array_of_layers.size - 1
-      @array_of_bias << create_bias(i + 1, samples)
+      @array_of_bias << create_bias(i + 1)
       i += 1
     end
   end
@@ -70,14 +70,38 @@ class NN
     @array_of_a.last
   end
 
+  def save_weights(path)
+    serialized_array1 = Marshal.dump(@array_of_weights)
+    File.open(path + '_w.msh', 'wb') { |f| f.write(serialized_array1) }
+  end
+
+  def load_weights(path)
+    @array_of_weights = Marshal.load File.open(path + '_w.msh', 'rb')
+  end
+
+  def predict(dev_data_x, dev_data_y, cost_function)
+    @array_of_z = []
+    @array_of_a = []
+    predict_forward(dev_data_x, 0)
+    i = 1
+    while i < @array_of_layers.size - 1
+      predict_forward(@array_of_z[i - 1], i)
+      if i == @array_of_layers.size - 2
+        puts 'Error: ' + apply_cost(cost_function, @array_of_a[i], dev_data_y, i).to_s
+      end
+      i += 1
+    end
+    @array_of_a.last
+  end
+
   private
 
   def create_weights(counter)
     @g.random_matrix(@array_of_layers[counter].size, @array_of_layers[counter - 1].size, 0.0..0.01)
   end
 
-  def create_bias(counter, features)
-    @g.zero_matrix(@array_of_layers[counter].size, features)
+  def create_bias(counter)
+    @g.zero_matrix(@array_of_layers[counter].size, @samples)
   end
 
   def fit_forward(z, counter)
@@ -106,20 +130,28 @@ class NN
     @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @array_of_delta_b[counter + 1])
   end
 
+  def predict_forward(z, counter)
+    if counter.zero?
+      z = z.transpose
+    end
+    @array_of_z[counter] = @mm.dot(@array_of_weights[counter], z)
+    @array_of_a[counter] = apply_a(@array_of_z[counter], counter + 1)
+  end
+
   def apply_cost(cost_function, data_x, data_y, counter)
     tmp1 = 0
     if !@regularization_l2.nil?
       tmp2 = @mm.f_norm(@array_of_weights[counter])
       if cost_function == 'mse'
-        tmp1 = @c.quadratic_cost_with_r(@array_of_a.last.flatten, data_y, data_x.size, @regularization_l2, tmp2)
+        tmp1 = @c.quadratic_cost_with_r(@array_of_a[counter].flatten, data_y, data_x.size, @regularization_l2, tmp2)
       elsif cost_function == 'cross_entropy'
-        tmp1 = @c.cross_entropy_cost_with_r(@array_of_a.last.flatten, data_y, data_x.size, @regularization_l2, tmp2)
+        tmp1 = @c.cross_entropy_cost_with_r(@array_of_a[counter].flatten, data_y, data_x.size, @regularization_l2, tmp2)
       end
     else
       if cost_function == 'mse'
-        tmp1 = @c.quadratic_cost(@array_of_a.last.flatten, data_y, data_x.size)
+        tmp1 = @c.quadratic_cost(@array_of_a[counter].flatten, data_y, data_x.size)
       elsif cost_function == 'cross_entropy'
-        tmp1 = @c.cross_entropy_cost(@array_of_a.last.flatten, data_y, data_x.size)
+        tmp1 = @c.cross_entropy_cost(@array_of_a[counter].flatten, data_y, data_x.size)
       end
     end
     tmp1
