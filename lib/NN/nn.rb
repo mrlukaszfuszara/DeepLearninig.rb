@@ -9,6 +9,7 @@ class NN
 
     @array_of_layers = []
     @array_of_activations = []
+    @array_of_dropouts = []
     @array_of_weights = []
     @array_of_bias = []
 
@@ -17,9 +18,10 @@ class NN
     @features = data_x_size
   end
 
-  def add_nn(batch_size, activation)
+  def add_nn(batch_size, activation, dropout = 1.0)
     @array_of_layers << Array.new(batch_size)
     @array_of_activations << activation
+    @array_of_dropouts << dropout
   end
 
   def compile(samples)
@@ -66,6 +68,30 @@ class NN
         fit_backward_step_two(i - 1, alpha)
         i -= 1
       end
+
+      array_of_d = []
+      i = 0
+      while i < @array_of_a.size
+        array_of_d[i] = []
+        tmp = @g.random_matrix(@array_of_a[i].size, @array_of_a[i][0].size, 0.0..1.0)
+        j = 0
+        while j < tmp.size
+          array_of_d[i][j] = []
+          k = 0
+          while k < tmp[j].size
+            if tmp[j][k] < @array_of_dropouts[i]
+              array_of_d[i][j][k]  = 0.0
+            else
+              array_of_d[i][j][k]  = 1.0
+            end
+            k += 1
+          end
+          j += 1
+        end
+        @array_of_a[i] = @mm.mult(@mm.mult(@array_of_a[i], array_of_d[i]), (1.0 / @array_of_dropouts[i])) #/
+        i += 1
+      end
+
     end
     @array_of_a.last
   end
@@ -73,10 +99,13 @@ class NN
   def save_weights(path)
     serialized_array1 = Marshal.dump(@array_of_weights)
     File.open(path + '_w.msh', 'wb') { |f| f.write(serialized_array1) }
+    serialized_array2 = Marshal.dump(@array_of_bias)
+    File.open(path + '_b.msh', 'wb') { |f| f.write(serialized_array2) }
   end
 
   def load_weights(path)
     @array_of_weights = Marshal.load File.open(path + '_w.msh', 'rb')
+    @array_of_bias = Marshal.load File.open(path + '_b.msh', 'rb')
   end
 
   def predict(dev_data_x, dev_data_y, cost_function)

@@ -10,11 +10,9 @@ require './lib/nn/nn'
 class Main
   def train(data_x, data_y, cost_function, learning_rate, epochs, regularization_l2)
     nn = NN.new(data_x[0].size)
-    nn.add_nn(6, 'leaky_relu')
-    nn.add_nn(12, 'leaky_relu')
-    nn.add_nn(24, 'leaky_relu')
-    nn.add_nn(12, 'leaky_relu')
-    nn.add_nn(1, 'leaky_relu')
+    nn.add_nn(6, 'leaky_relu', 0.9)
+    nn.add_nn(24, 'leaky_relu', 0.2)
+    nn.add_nn(1, 'leaky_relu', 0.9)
     nn.compile(data_x.size)
     tmp = nn.fit(data_x, data_y, cost_function, learning_rate, epochs, regularization_l2)
     nn.save_weights('./test')
@@ -22,14 +20,12 @@ class Main
   end
 
   def predict(data_x, data_y, cost_function)
-    nnt = NN.new(data_x[0].size)
-    nnt.add_nn(6, 'leaky_relu')
-    nnt.add_nn(12, 'leaky_relu')
-    nnt.add_nn(24, 'leaky_relu')
-    nnt.add_nn(12, 'leaky_relu')
-    nnt.add_nn(1, 'leaky_relu')
-    nnt.load_weights('./test')
-    tmp = nnt.predict(data_x, data_y, cost_function)
+    nn = NN.new(data_x[0].size)
+    nn.add_nn(6, 'leaky_relu', 0.9)
+    nn.add_nn(24, 'leaky_relu', 0.2)
+    nn.add_nn(1, 'leaky_relu', 0.9)
+    nn.load_weights('./test')
+    tmp = nn.predict(data_x, data_y, cost_function)
     tmp
   end
 end
@@ -53,7 +49,7 @@ test_set_y = test_set[1]
 
 cost_function = 'mse'
 learning_rate = 0.1
-epochs = 1000
+epochs = 100
 regularization_l2 = 0.1
 
 main = Main.new
