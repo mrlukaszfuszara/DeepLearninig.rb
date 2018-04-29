@@ -30,8 +30,8 @@ class NN
       i += 1
     end
     i = 0
-    while i < @array_of_layers.size
-      @array_of_bias << create_bias(i, samples)
+    while i < @array_of_layers.size - 1
+      @array_of_bias << create_bias(i + 1, samples)
       i += 1
     end
   end
@@ -50,7 +50,7 @@ class NN
       i = 1
       while i < @array_of_layers.size - 1
         fit_forward(@array_of_z[i - 1], i)
-        p apply_cost(cost_function, @array_of_a.last, data_y) if i == @array_of_layers.size - 2
+        p apply_cost(cost_function, @array_of_a[i], data_y) if i == @array_of_layers.size - 2
         i += 1
       end
       i = @array_of_layers.size - 1
@@ -70,18 +70,18 @@ class NN
   private
 
   def create_weights(counter)
-    @g.random_matrix(@array_of_layers[counter].size, @array_of_layers[counter - 1].size, 0.0..1.0)
+    @g.random_matrix(@array_of_layers[counter].size, @array_of_layers[counter - 1].size, 0.0..0.01)
   end
 
   def create_bias(counter, features)
-    @g.random_matrix(@array_of_layers[counter].size, features, 0.0..1.0)
+    @g.zero_matrix(@array_of_layers[counter].size, features)
   end
 
   def fit_forward(z, counter)
     if counter.zero?
       z = z.transpose
     end
-    @array_of_z[counter] = @mm.add(@mm.dot(@array_of_weights[counter], z), @array_of_bias[counter + 1])
+    @array_of_z[counter] = @mm.add(@mm.dot(@array_of_weights[counter], z), @array_of_bias[counter])
     @array_of_a[counter] = apply_a(@array_of_z[counter], counter + 1)
   end
 
@@ -91,12 +91,12 @@ class NN
     @array_of_delta_a[counter - 1] = @mm.dot(@array_of_weights[counter - 1].transpose, @array_of_delta_z[counter])
 
     @array_of_delta_w[counter] = @mm.mult(@mm.dot(@array_of_delta_z[counter], @array_of_a[counter - 2].transpose), (1.0 / @samples)) #/
-    @array_of_delta_b[counter] = @mm.mult(@mm.vertical_sum(@array_of_delta_z[counter]), (1.0 / @samples)) #/
+    @array_of_delta_b[counter] = @mm.mult(@mm.horizontal_sum(@array_of_delta_z[counter]), (1.0 / @samples)) #/
   end
 
   def fit_backward_step_two(counter, alpha)
     @array_of_weights[counter] = @mm.subt(@array_of_weights[counter], @mm.mult(@array_of_delta_w[counter + 1], alpha))
-    @array_of_bias[counter + 1] = @mm.subt(@array_of_bias[counter + 1], @array_of_delta_b[counter + 1].first * alpha)
+    @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @array_of_delta_b[counter + 1])
   end
 
   def apply_cost(cost_function,data_x, data_y)

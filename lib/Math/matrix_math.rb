@@ -300,6 +300,21 @@ class MatrixMath
     array
   end
 
+  def horizontal_sum(matrix)
+    array = []
+    i = 0
+    while i < matrix[0].size
+      array[i] = 0
+      j = 0
+      while j < matrix.size
+        array[i] += matrix[j][i]
+        j += 1
+      end
+      i += 1
+    end
+    array
+  end
+
   private
 
   def matrix_check(variable)
