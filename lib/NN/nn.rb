@@ -58,6 +58,28 @@ class NN
         end
         i += 1
       end
+      array_of_d = []
+      i = 0
+      while i < @array_of_a.size
+        array_of_d[i] = []
+        tmp = @g.random_matrix(@array_of_a[i].size, @array_of_a[i][0].size, 0.0..0.1)
+        j = 0
+        while j < tmp.size
+          array_of_d[i][j] = []
+          k = 0
+          while k < tmp[j].size
+            if tmp[j][k] <= @array_of_dropouts[i]
+              array_of_d[i][j][k]  = 1.0
+            else
+              array_of_d[i][j][k]  = 0.0
+            end
+            k += 1
+          end
+          j += 1
+        end
+        @array_of_a[i] = @mm.mult(@mm.mult(@array_of_a[i], array_of_d[i]), (1.0 / @array_of_dropouts[i])) #/
+        i += 1
+      end
       i = @array_of_layers.size - 1
       while i > 1
         fit_backward_step_one(i, data_y)
@@ -68,30 +90,6 @@ class NN
         fit_backward_step_two(i - 1, alpha)
         i -= 1
       end
-
-      array_of_d = []
-      i = 0
-      while i < @array_of_a.size
-        array_of_d[i] = []
-        tmp = @g.random_matrix(@array_of_a[i].size, @array_of_a[i][0].size, 0.0..1.0)
-        j = 0
-        while j < tmp.size
-          array_of_d[i][j] = []
-          k = 0
-          while k < tmp[j].size
-            if tmp[j][k] < @array_of_dropouts[i]
-              array_of_d[i][j][k]  = 0.0
-            else
-              array_of_d[i][j][k]  = 1.0
-            end
-            k += 1
-          end
-          j += 1
-        end
-        @array_of_a[i] = @mm.mult(@mm.mult(@array_of_a[i], array_of_d[i]), (1.0 / @array_of_dropouts[i])) #/
-        i += 1
-      end
-
     end
     @array_of_a.last
   end
@@ -108,13 +106,14 @@ class NN
     @array_of_bias = Marshal.load File.open(path + '_b.msh', 'rb')
   end
 
-  def predict(dev_data_x, dev_data_y, cost_function)
+  def predict(dev_data_x, dev_data_y, cost_function, regularization_l2)
+    @regularization_l2 = regularization_l2
     @array_of_z = []
     @array_of_a = []
-    predict_forward(dev_data_x, 0)
+    fit_forward(dev_data_x, 0)
     i = 1
     while i < @array_of_layers.size - 1
-      predict_forward(@array_of_z[i - 1], i)
+      fit_forward(@array_of_z[i - 1], i)
       if i == @array_of_layers.size - 2
         puts 'Error: ' + apply_cost(cost_function, @array_of_a[i], dev_data_y, i).to_s
       end
@@ -130,14 +129,14 @@ class NN
   end
 
   def create_bias(counter)
-    @g.zero_matrix(@array_of_layers[counter].size, @samples)
+    @g.zero_vector(@array_of_layers[counter].size)
   end
 
   def fit_forward(z, counter)
     if counter.zero?
       z = z.transpose
     end
-    @array_of_z[counter] = @mm.add(@mm.dot(@array_of_weights[counter], z), @array_of_bias[counter])
+    @array_of_z[counter] = @mm.add_reversed(@mm.dot(@array_of_weights[counter], z), @array_of_bias[counter])
     @array_of_a[counter] = apply_a(@array_of_z[counter], counter + 1)
   end
 
@@ -151,20 +150,12 @@ class NN
     else
       @array_of_delta_w[counter] = @mm.mult(@mm.dot(@array_of_delta_z[counter], @array_of_a[counter - 2].transpose), (1.0 / @samples)) #/
     end
-    @array_of_delta_b[counter] = @mm.mult(@mm.horizontal_sum(@array_of_delta_z[counter]), (1.0 / @samples)) #/
+    @array_of_delta_b[counter] = @mm.mult(@mm.vertical_sum(@array_of_delta_z[counter]), (1.0 / @samples)) #/
   end
 
   def fit_backward_step_two(counter, alpha)
     @array_of_weights[counter] = @mm.subt(@array_of_weights[counter], @mm.mult(@array_of_delta_w[counter + 1], alpha))
     @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @array_of_delta_b[counter + 1])
-  end
-
-  def predict_forward(z, counter)
-    if counter.zero?
-      z = z.transpose
-    end
-    @array_of_z[counter] = @mm.dot(@array_of_weights[counter], z)
-    @array_of_a[counter] = apply_a(@array_of_z[counter], counter + 1)
   end
 
   def apply_cost(cost_function, data_x, data_y, counter)

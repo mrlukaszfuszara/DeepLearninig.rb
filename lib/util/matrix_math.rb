@@ -22,6 +22,28 @@ class MatrixMath
     sum
   end
 
+  def add_reversed(variable1, variable2)
+    one = matrix_check(variable1)
+    two = matrix_check(variable2)
+    array = []
+    if one == 2 && two == 1
+      variable1 = variable1.transpose
+      if variable1[0].size == variable2.size
+        i = 0
+        while i < variable1.size
+          array[i] = []
+          j = 0
+          while j < variable2.size
+            array[i][j] = variable1[i][j] + variable2[j]
+            j += 1
+          end
+          i += 1
+        end
+      end
+    end
+    array.transpose
+  end
+
   def add(variable1, variable2)
     one = matrix_check(variable1)
     two = matrix_check(variable2)
