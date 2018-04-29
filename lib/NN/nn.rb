@@ -60,11 +60,10 @@ class NN
       end
       i = @array_of_layers.size - 1
       while i > 1
-        fit_backward_step_two(i, alpha)
+        fit_backward_step_two(i - 1, alpha)
         i -= 1
       end
     end
-
     @array_of_a.last
   end
 
@@ -83,7 +82,7 @@ class NN
       z = z.transpose
     end
     @array_of_z[counter] = @mm.add(@mm.dot(@array_of_weights[counter], z), @array_of_bias[counter + 1])
-    @array_of_a[counter] = apply_a(@array_of_z[counter], counter)
+    @array_of_a[counter] = apply_a(@array_of_z[counter], counter + 1)
   end
 
   def fit_backward_step_one(counter, data_y)
@@ -96,8 +95,8 @@ class NN
   end
 
   def fit_backward_step_two(counter, alpha)
-    tmp = @array_of_delta_w[counter]
-    @array_of_weights[counter - 1] = @mm.subt(@array_of_weights[counter - 1], @mm.mult(tmp, alpha))
+    @array_of_weights[counter] = @mm.subt(@array_of_weights[counter], @mm.mult(@array_of_delta_w[counter + 1], alpha))
+    @array_of_bias[counter + 1] = @mm.subt(@array_of_bias[counter + 1], @array_of_delta_b[counter + 1].first * alpha)
   end
 
   def apply_cost(cost_function,data_x, data_y)
@@ -128,7 +127,7 @@ class NN
 
   def apply_d(z, counter)
     tmp = 0
-    if @array_of_activations[counter] == 'none'
+    if @array_of_activations[counter] == 'nil'
       tmp = z
     elsif @array_of_activations[counter] == 'relu'
       tmp = @a.relu_d(z)
