@@ -38,7 +38,7 @@ class NN
     end
   end
 
-  def fit(train_data_x, train_data_y, cost_function, alpha, epochs, regularization_l2 = nil)
+  def fit(train_data_x, train_data_y, cost_function, alpha, epochs, iterations, regularization_l2 = nil)
     @regularization_l2 = regularization_l2
     epochs.times do
       @array_of_z = []
@@ -54,7 +54,7 @@ class NN
       while i < @array_of_layers.size - 1
         fit_forward(@array_of_z[i - 1], i)
         if i == @array_of_layers.size - 2
-          puts 'Error: ' + apply_cost(cost_function, @array_of_a[i].flatten, train_data_y, i).to_s
+          puts 'Train Error: ' + apply_cost(cost_function, @array_of_a[i].flatten, train_data_y, i).to_s
         end
         i += 1
       end
@@ -68,7 +68,7 @@ class NN
           array_of_d[i][j] = []
           k = 0
           while k < tmp[j].size
-            if tmp[j][k] <= @array_of_dropouts[i]
+            if tmp[j][k] < @array_of_dropouts[i]
               array_of_d[i][j][k]  = 1.0
             else
               array_of_d[i][j][k]  = 0.0
@@ -80,18 +80,20 @@ class NN
         @array_of_a[i] = @mm.mult(@mm.mult(@array_of_a[i], array_of_d[i]), (1.0 / @array_of_dropouts[i])) #/
         i += 1
       end
-      i = @array_of_layers.size - 1
-      while i > 1
-        fit_backward_step_one(i, train_data_y)
-        i -= 1
-      end
-      i = @array_of_layers.size - 1
-      while i > 1
-        fit_backward_step_two(i - 1, alpha)
-        i -= 1
+      iterations.times do
+        i = @array_of_layers.size - 1
+        while i > 1
+          fit_backward_step_one(i, train_data_y)
+          i -= 1
+        end
+        i = @array_of_layers.size - 1
+        while i > 1
+          fit_backward_step_two(i - 1, alpha)
+          i -= 1
+        end
       end
     end
-    @array_of_a.last
+    p @array_of_a.last
   end
 
   def save_weights(path)
@@ -115,7 +117,7 @@ class NN
     while i < @array_of_layers.size - 1
       fit_forward(@array_of_z[i - 1], i)
       if i == @array_of_layers.size - 2
-        puts 'Error: ' + apply_cost(cost_function, @array_of_a[i].flatten, dev_data_y, i).to_s
+        puts 'Prediction Error: ' + apply_cost(cost_function, @array_of_a[i].flatten, dev_data_y, i).to_s
       end
       i += 1
     end
@@ -125,7 +127,7 @@ class NN
   private
 
   def create_weights(counter)
-    @g.random_matrix(@array_of_layers[counter].size, @array_of_layers[counter - 1].size, 0.0..0.01)
+    @mm.mult(@g.random_matrix(@array_of_layers[counter].size, @array_of_layers[counter - 1].size, 0.0..0.01), Math.sqrt(2.0 / @features)) #/
   end
 
   def create_bias(counter)
@@ -133,9 +135,6 @@ class NN
   end
 
   def fit_forward(z, counter)
-    if counter.zero?
-      z = z.transpose
-    end
     @array_of_z[counter] = @mm.add_reversed(@mm.dot(@array_of_weights[counter], z), @array_of_bias[counter])
     @array_of_a[counter] = apply_a(@array_of_z[counter], counter + 1)
   end
@@ -155,7 +154,7 @@ class NN
 
   def fit_backward_step_two(counter, alpha)
     @array_of_weights[counter] = @mm.subt(@array_of_weights[counter], @mm.mult(@array_of_delta_w[counter + 1], alpha))
-    @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @array_of_delta_b[counter + 1])
+    @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @mm.mult(@array_of_delta_b[counter + 1], alpha))
   end
 
   def apply_cost(cost_function, data_x, data_y, counter)
@@ -178,7 +177,6 @@ class NN
   end
 
   def apply_a(z, counter)
-    tmp = 0
     if @array_of_activations[counter] == 'nil'
       tmp = z
     elsif @array_of_activations[counter] == 'relu'
@@ -194,7 +192,6 @@ class NN
   end
 
   def apply_d(z, counter)
-    tmp = 0
     if @array_of_activations[counter] == 'nil'
       tmp = z
     elsif @array_of_activations[counter] == 'relu'

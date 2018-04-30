@@ -44,6 +44,87 @@ class MatrixMath
     array.transpose
   end
 
+  def subt_reversed(variable1, variable2)
+    one = matrix_check(variable1)
+    two = matrix_check(variable2)
+    array = []
+    if one == 2 && two == 1
+      variable1 = variable1.transpose
+      if variable1[0].size == variable2.size
+        i = 0
+        while i < variable1.size
+          array[i] = []
+          j = 0
+          while j < variable2.size
+            array[i][j] = variable1[i][j] - variable2[j]
+            j += 1
+          end
+          i += 1
+        end
+      end
+    end
+    array.transpose
+  end
+
+  def mult_reversed(variable1, variable2)
+    one = matrix_check(variable1)
+    two = matrix_check(variable2)
+    array = []
+    if one == 2 && two == 1
+      variable1 = variable1.transpose
+      if variable1[0].size == variable2.size
+        i = 0
+        while i < variable1.size
+          array[i] = []
+          j = 0
+          while j < variable2.size
+            array[i][j] = variable1[i][j] * variable2[j]
+            j += 1
+          end
+          i += 1
+        end
+      end
+    end
+    array.transpose
+  end
+
+  def div_reversed(variable1, variable2)
+    one = matrix_check(variable1)
+    two = matrix_check(variable2)
+    array = []
+    if one == 2 && two == 1
+      variable1 = variable1.transpose
+      if variable1[0].size == variable2.size
+        i = 0
+        while i < variable1.size
+          array[i] = []
+          j = 0
+          while j < variable2.size
+            array[i][j] = variable1[i][j] / variable2[j]
+            j += 1
+          end
+          i += 1
+        end
+      end
+    end
+    array.transpose
+  end
+
+  def matrix_abs(matrix)
+    array = []
+    i = 0
+    while i < matrix.size
+      array[i] = [0]
+      j = 0
+      while j < matrix[i].size
+        array[i][j] = matrix[i][j].abs
+        j += 1
+      end
+      i += 1
+    end
+    array
+  end
+
   def add(variable1, variable2)
     one = matrix_check(variable1)
     two = matrix_check(variable2)
