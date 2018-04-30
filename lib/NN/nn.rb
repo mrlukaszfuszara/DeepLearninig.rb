@@ -93,7 +93,7 @@ class NN
         end
       end
     end
-    p @array_of_a.last
+    @array_of_a.last
   end
 
   def save_weights(path)
@@ -112,12 +112,12 @@ class NN
     @regularization_l2 = regularization_l2
     @array_of_z = []
     @array_of_a = []
-    fit_forward(dev_data_x, 0)
+    predict_forward(dev_data_x, 0)
     i = 1
     while i < @array_of_layers.size - 1
-      fit_forward(@array_of_z[i - 1], i)
+      predict_forward(@array_of_z[i - 1], i)
       if i == @array_of_layers.size - 2
-        puts 'Prediction Error: ' + apply_cost(cost_function, @array_of_a[i].flatten, dev_data_y, i).to_s
+        puts 'Train Error: ' + apply_cost(cost_function, @array_of_a[i].flatten, dev_data_y, i).to_s
       end
       i += 1
     end
@@ -127,15 +127,26 @@ class NN
   private
 
   def create_weights(counter)
-    @mm.mult(@g.random_matrix(@array_of_layers[counter].size, @array_of_layers[counter - 1].size, 0.0..0.01), Math.sqrt(2.0 / @features)) #/
+    @mm.mult(@g.random_matrix(@array_of_layers[counter].size, @array_of_layers[counter - 1].size, 0.0..0.1), Math.sqrt(2.0 / @features)) #/
   end
 
   def create_bias(counter)
-    @g.zero_vector(@array_of_layers[counter].size)
+    @g.zero_matrix(@array_of_layers[counter].size, @samples)
   end
 
   def fit_forward(z, counter)
-    @array_of_z[counter] = @mm.add_reversed(@mm.dot(@array_of_weights[counter], z), @array_of_bias[counter])
+    if counter == 0
+      z = z.transpose
+    end
+    @array_of_z[counter] = @mm.add(@mm.dot(@array_of_weights[counter], z), @array_of_bias[counter])
+    @array_of_a[counter] = apply_a(@array_of_z[counter], counter + 1)
+  end
+
+  def predict_forward(z, counter)
+    if counter == 0
+      z = z.transpose
+    end
+    @array_of_z[counter] = @mm.dot(@array_of_weights[counter], z)
     @array_of_a[counter] = apply_a(@array_of_z[counter], counter + 1)
   end
 
@@ -149,7 +160,7 @@ class NN
     else
       @array_of_delta_w[counter] = @mm.mult(@mm.dot(@array_of_delta_z[counter], @array_of_a[counter - 2].transpose), (1.0 / @samples)) #/
     end
-    @array_of_delta_b[counter] = @mm.mult(@mm.vertical_sum(@array_of_delta_z[counter]), (1.0 / @samples)) #/
+    @array_of_delta_b[counter] = @mm.mult(@array_of_delta_z[counter], (1.0 / @samples)) #/
   end
 
   def fit_backward_step_two(counter, alpha)
@@ -158,7 +169,6 @@ class NN
   end
 
   def apply_cost(cost_function, data_x, data_y, counter)
-    tmp1 = 0
     if !@regularization_l2.nil?
       tmp2 = @mm.f_norm(@array_of_weights[counter])
       if cost_function == 'mse'
