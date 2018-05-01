@@ -104,7 +104,6 @@ class NN
         @array_of_a = []
 
         @array_of_delta_a = []
-        @array_of_delta_z = []
         @array_of_delta_w = []
         @array_of_delta_b = []
         fit_forward(train_data_x[mb], 0)
@@ -210,7 +209,7 @@ class NN
   private
 
   def create_weights(counter)
-    @mm.mult(@g.random_matrix(@array_of_layers[counter], @array_of_layers[counter - 1], 0.0..0.1), Math.sqrt(2.0 / @features)) #/
+    @mm.mult(@g.random_matrix(@array_of_layers[counter], @array_of_layers[counter - 1], 0.0..0.01), Math.sqrt(2.0 / @features)) #/
   end
 
   def create_bias(counter)
@@ -218,7 +217,7 @@ class NN
   end
 
   def fit_forward(z, counter)
-    if counter == 0
+    if counter.zero?
       z = z.transpose
     end
     @array_of_z[counter] = @mm.add(@mm.dot(@array_of_weights[counter], z), @array_of_bias[counter])
@@ -226,7 +225,7 @@ class NN
   end
 
   def predict_forward(z, counter)
-    if counter == 0
+    if counter.zero?
       z = z.transpose
     end
     @array_of_z[counter] = @mm.dot(@array_of_weights[counter], z)
@@ -236,27 +235,27 @@ class NN
   def fit_backward_step_one(counter, data_y)
     if counter == @array_of_layers.size - 1
       if @cost_function == 'mse'
-        @array_of_delta_a[counter] = @mm.subt(@array_of_a[counter - 1], data_y)
+        @array_of_delta_a << @mm.subt(@array_of_a[counter - 1], data_y)
       elsif @cost_function == 'cross_entropy'
         tmp1 = @mm.mult(@mm.div(data_y, @array_of_a[counter - 1].flatten), -1.0)
         tmp2 = @mm.div(@mm.subt(data_y, 1.0), @mm.subt(@array_of_a[counter - 1].flatten, 1.0))
-        @array_of_delta_a[counter] = [@mm.add(tmp1, tmp2)]
+        @array_of_delta_a << [@mm.add(tmp1, tmp2)]
       end
     end
-    @array_of_delta_z[counter] = @mm.mult(@array_of_delta_a[counter], apply_d(@array_of_z[counter - 1], counter))
-    @array_of_delta_a[counter - 1] = @mm.dot(@array_of_weights[counter - 1].transpose, @array_of_delta_z[counter])
+    delta_z = @mm.mult(@array_of_delta_a.pop, apply_d(@array_of_z[counter - 1], counter))
+    @array_of_delta_a << @mm.dot(@array_of_weights[counter - 1].transpose, delta_z)
     if !@regularization_l2.nil?
-      tmp = @mm.mult(@mm.dot(@array_of_delta_z[counter], @array_of_a[counter - 2].transpose), (1.0 / @samples)) #/
-      @array_of_delta_w[counter] = @mm.add(tmp, @mm.mult(@array_of_weights[counter - 1], (@regularization_l2 / @samples))) #/
+      tmp = @mm.mult(@mm.dot(delta_z, @array_of_a[counter - 2].transpose), (1.0 / @samples)) #/
+      @array_of_delta_w[counter - 2] = @mm.add(tmp, @mm.mult(@array_of_weights[counter - 1], (@regularization_l2 / @samples))) #/
     else
-      @array_of_delta_w[counter] = @mm.mult(@mm.dot(@array_of_delta_z[counter], @array_of_a[counter - 2].transpose), (1.0 / @samples)) #/
+      @array_of_delta_w[counter - 2] = @mm.mult(@mm.dot(delta_z, @array_of_a[counter - 2].transpose), (1.0 / @samples)) #/
     end
-    @array_of_delta_b[counter] = @mm.mult(@array_of_delta_z[counter], (1.0 / @samples)) #/
+    @array_of_delta_b[counter - 2] = @mm.mult(delta_z, (1.0 / @samples)) #/
   end
 
   def fit_backward_step_two(counter, alpha)
-    @array_of_weights[counter] = @mm.subt(@array_of_weights[counter], @mm.mult(@array_of_delta_w[counter + 1], alpha))
-    @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @mm.mult(@array_of_delta_b[counter + 1], alpha))
+    @array_of_weights[counter] = @mm.subt(@array_of_weights[counter], @mm.mult(@array_of_delta_w[counter - 1], alpha))
+    @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @mm.mult(@array_of_delta_b[counter - 1], alpha))
   end
 
   def apply_cost(cost_function, data_x, data_y, counter)
