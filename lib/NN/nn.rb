@@ -19,7 +19,7 @@ class NN
   end
 
   def add_nn(batch_size, activation, dropout = 1.0)
-    @array_of_layers << Array.new(batch_size)
+    @array_of_layers << batch_size
     @array_of_activations << activation
     @array_of_dropouts << dropout
   end
@@ -41,15 +41,15 @@ class NN
   def fit(train_data_x, train_data_y, cost_function, optimizer, alpha, iterations, regularization_l2 = nil)
     @regularization_l2 = regularization_l2
     @cost_function = cost_function
-    @array_of_z = []
-    @array_of_a = []
-
-    @array_of_delta_a = []
-    @array_of_delta_z = []
-    @array_of_delta_w = []
-    @array_of_delta_b = []
 
     if optimizer == 'gd'
+      @array_of_z = []
+      @array_of_a = []
+
+      @array_of_delta_a = []
+      @array_of_delta_z = []
+      @array_of_delta_w = []
+      @array_of_delta_b = []
       fit_forward(train_data_x, 0)
       i = 1
       while i < @array_of_layers.size - 1
@@ -97,6 +97,13 @@ class NN
     elsif optimizer == 'mini-batch-gd'
       mb = 0
       while mb < train_data_x.size
+        @array_of_z = []
+        @array_of_a = []
+
+        @array_of_delta_a = []
+        @array_of_delta_z = []
+        @array_of_delta_w = []
+        @array_of_delta_b = []
         fit_forward(train_data_x[mb], 0)
         i = 1
         while i < @array_of_layers.size - 1
@@ -111,7 +118,7 @@ class NN
         i = 0
         while i < @array_of_a.size
           array_of_d[i] = []
-          tmp = @g.random_matrix(@array_of_a[i].size, @array_of_a[i][0].size, 0.0..0.1)
+          tmp = @g.random_matrix(@array_of_a[i].size, @array_of_a[i][0].size, 0.0..1.0)
           j = 0
           while j < tmp.size
             array_of_d[i][j] = []
@@ -148,15 +155,37 @@ class NN
   end
 
   def save_weights(path)
-    serialized_array1 = Marshal.dump(@array_of_weights)
-    File.open(path + '_w.msh', 'wb') { |f| f.write(serialized_array1) }
-    serialized_array2 = Marshal.dump(@array_of_bias)
-    File.open(path + '_b.msh', 'wb') { |f| f.write(serialized_array2) }
+    serialized_array = Marshal.dump([@array_of_weights, @array_of_bias])
+    File.open(path, 'wb') { |f| f.write(serialized_array) }
+  end
+
+  def save_architecture(path)
+    serialized_array = Marshal.dump([@cost_function, @regularization_l2, @array_of_layers, @array_of_activations, @array_of_dropouts])
+    File.open(path, 'wb') { |f| f.write(serialized_array) }
   end
 
   def load_weights(path)
-    @array_of_weights = Marshal.load File.open(path + '_w.msh', 'rb')
-    @array_of_bias = Marshal.load File.open(path + '_b.msh', 'rb')
+    tmp = Marshal.load File.open(path, 'rb')
+    @array_of_weights = tmp[0]
+    @array_of_bias = tmp[1]
+  end
+
+  def load_architecture(path)
+    tmp = Marshal.load File.open(path, 'rb')
+    @cost_function = tmp[0]
+    @regularization_l2 = tmp[1]
+    @array_of_layers = tmp[2]
+    layers = @array_of_layers.size
+    nodes = @array_of_layers
+    @array_of_layers = []
+    @array_of_activations = tmp[3]
+    @array_of_dropouts = tmp[4]
+
+    i = 0
+    while i < layers
+      add_nn(nodes[i].size, @array_of_activations[i], @array_of_dropouts[i])
+      i += 1
+    end
   end
 
   def predict(dev_data_x, dev_data_y, cost_function, regularization_l2 = nil)
@@ -178,11 +207,11 @@ class NN
   private
 
   def create_weights(counter)
-    @mm.mult(@g.random_matrix(@array_of_layers[counter].size, @array_of_layers[counter - 1].size, 0.0..0.1), Math.sqrt(2.0 / @features)) #/
+    @mm.mult(@g.random_matrix(@array_of_layers[counter], @array_of_layers[counter - 1], 0.0..0.1), Math.sqrt(2.0 / @features)) #/
   end
 
   def create_bias(counter)
-    @g.zero_matrix(@array_of_layers[counter].size, @samples)
+    @g.zero_matrix(@array_of_layers[counter], @samples)
   end
 
   def fit_forward(z, counter)

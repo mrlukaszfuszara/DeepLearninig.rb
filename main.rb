@@ -25,25 +25,22 @@ class Main
     elsif optimizer == 'mini-batch-gd'
       nn = NN.new(data_x[0][0].size)
       nn.add_nn(12, 'leaky_relu')
-      nn.add_nn(24, 'leaky_relu', 0.9)
-      nn.add_nn(24, 'leaky_relu', 0.9)
-      nn.add_nn(24, 'leaky_relu', 0.9)
+      nn.add_nn(24, 'leaky_relu', 0.8)
+      nn.add_nn(24, 'leaky_relu', 0.8)
+      nn.add_nn(24, 'leaky_relu', 0.8)
       nn.add_nn(1, 'leaky_relu')
       nn.compile(data_x[0].size)
       tmp = nn.fit(data_x, data_y, cost_function, optimizer, learning_rate, iterations, regularization_l2)
-      nn.save_weights('./test')
+      nn.save_weights('./weights.msh')
+      nn.save_architecture('./arch.msh')
       tmp
     end
   end
 
   def predict(data_x, data_y, cost_function, regularization_l2)
     nn = NN.new(data_x[0].size)
-    nn.add_nn(12, 'leaky_relu')
-    nn.add_nn(24, 'leaky_relu')
-    nn.add_nn(24, 'leaky_relu')
-    nn.add_nn(24, 'leaky_relu')
-    nn.add_nn(1, 'leaky_relu')
-    nn.load_weights('./test')
+    nn.load_architecture('./arch.msh')
+    nn.load_weights('./weights.msh')
     nn.predict(data_x, data_y, cost_function, regularization_l2)
   end
 end
@@ -53,8 +50,8 @@ g = Generators.new
 data_x = g.random_matrix(900, 3, 0.0..1.0)
 data_y = g.random_vector(900, 0.0..1.0)
 
-#data_x = [[0.1, 0.7, 0.1],[0.1, 0.2, 0.1],[0.1, 0.3, 0.1],[0.1, 0.6, 0.1],[0.1, 0.2, 0.1],[0.1, 0.7, 0.1],[0.1, 0.2, 0.1],[0.1, 0.3, 0.1],[0.1, 0.6, 0.1],[0.1, 0.2, 0.1],[0.1, 0.7, 0.1],[0.1, 0.2, 0.1],[0.1, 0.3, 0.1],[0.1, 0.6, 0.1],[0.1, 0.2, 0.1],[0.1, 0.7, 0.1],[0.1, 0.2, 0.1],[0.1, 0.3, 0.1],[0.1, 0.6, 0.1],[0.1, 0.2, 0.1],[0.1, 0.7, 0.1],[0.1, 0.2, 0.1],[0.1, 0.3, 0.1],[0.1, 0.6, 0.1],[0.1, 0.2, 0.1],[0.1, 0.7, 0.1],[0.1, 0.2, 0.1],[0.1, 0.3, 0.1],[0.1, 0.6, 0.1],[0.1, 0.2, 0.1]]
-#data_y = [0.1,0.1,0.1,0.1,0.5,0.1,0.1,0.1,0.1,0.5,0.1,0.1,0.1,0.1,0.5,0.1,0.1,0.1,0.1,0.5,0.1,0.1,0.1,0.1,0.5,0.1,0.1,0.1,0.1,0.5]
+data_x = [[0.1, 0.7, 0.1],[0.1, 0.2, 0.1],[0.1, 0.3, 0.1],[0.1, 0.6, 0.1],[0.1, 0.2, 0.1],[0.1, 0.7, 0.1],[0.1, 0.2, 0.1],[0.1, 0.3, 0.1],[0.1, 0.6, 0.1],[0.1, 0.2, 0.1],[0.1, 0.7, 0.1],[0.1, 0.2, 0.1],[0.1, 0.3, 0.1],[0.1, 0.6, 0.1],[0.1, 0.2, 0.1],[0.1, 0.7, 0.1],[0.1, 0.2, 0.1],[0.1, 0.3, 0.1],[0.1, 0.6, 0.1],[0.1, 0.2, 0.1],[0.1, 0.7, 0.1],[0.1, 0.2, 0.1],[0.1, 0.3, 0.1],[0.1, 0.6, 0.1],[0.1, 0.2, 0.1],[0.1, 0.7, 0.1],[0.1, 0.2, 0.1],[0.1, 0.3, 0.1],[0.1, 0.6, 0.1],[0.1, 0.2, 0.1]]
+data_y = [0.1,0.1,0.1,0.1,0.5,0.1,0.1,0.1,0.1,0.5,0.1,0.1,0.1,0.1,0.5,0.1,0.1,0.1,0.1,0.5,0.1,0.1,0.1,0.1,0.5,0.1,0.1,0.1,0.1,0.5]
 
 stdt = SpliterTDT.new(data_x, data_y)
 train_set = stdt.train
@@ -77,8 +74,8 @@ test_set_y = test_set[1]
 optimizer = 'mini-batch-gd'
 cost_function = 'mse'
 learning_rate = 0.001
-regularization_l2 = 0.1
-iterations = 100
+regularization_l2 = 0.01
+iterations = 10
 
 main = Main.new
 p main.train(train_set_x, train_set_y, cost_function, optimizer, learning_rate, iterations, regularization_l2)
