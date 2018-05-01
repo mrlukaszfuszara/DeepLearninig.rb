@@ -13,8 +13,8 @@ class SplitterMB
     array_y = []
     i = 0
     while i < @x.size
-      array_x << @x[i...(i + mini_batch_size)]
-      array_y << @y[i...(i + mini_batch_size)]
+      array_x << @x[i..(i + mini_batch_size)]
+      array_y << @y[i..(i + mini_batch_size)]
       i += mini_batch_size
     end
     if array_x.last.size != @x.size

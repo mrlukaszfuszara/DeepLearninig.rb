@@ -38,25 +38,71 @@ class NN
     end
   end
 
-  def fit(epochs, train_data_x, train_data_y, cost_function, optimizer, alpha, iterations, regularization_l2 = nil)
+  def fit(train_data_x, train_data_y, cost_function, optimizer, alpha, iterations, regularization_l2 = nil)
     @regularization_l2 = regularization_l2
     @cost_function = cost_function
-    epochs.times do
-      @array_of_z = []
-      @array_of_a = []
+    @array_of_z = []
+    @array_of_a = []
 
-      @array_of_delta_a = []
-      @array_of_delta_z = []
-      @array_of_delta_w = []
-      @array_of_delta_b = []
+    @array_of_delta_a = []
+    @array_of_delta_z = []
+    @array_of_delta_w = []
+    @array_of_delta_b = []
 
-      if optimizer == 'gd'
-        fit_forward(train_data_x, 0)
+    if optimizer == 'gd'
+      fit_forward(train_data_x, 0)
+      i = 1
+      while i < @array_of_layers.size - 1
+        fit_forward(@array_of_z[i - 1], i)
+        if i == @array_of_layers.size - 2
+          puts 'Train Error: ' + apply_cost(cost_function, @array_of_a[i].flatten, train_data_y, i).to_s
+        end
+        i += 1
+      end
+
+      array_of_d = []
+      i = 0
+      while i < @array_of_a.size
+        array_of_d[i] = []
+        tmp = @g.random_matrix(@array_of_a[i].size, @array_of_a[i][0].size, 0.0..0.1)
+        j = 0
+        while j < tmp.size
+          array_of_d[i][j] = []
+          k = 0
+          while k < tmp[j].size
+            if tmp[j][k] < @array_of_dropouts[i]
+              array_of_d[i][j][k]  = 1.0
+            else
+              array_of_d[i][j][k]  = 0.0
+            end
+            k += 1
+          end
+          j += 1
+        end
+        @array_of_a[i] = @mm.mult(@mm.mult(@array_of_a[i], array_of_d[i]), (1.0 / @array_of_dropouts[i])) #/
+        i += 1
+      end
+      iterations.times do
+        i = @array_of_layers.size - 1
+        while i > 1
+          fit_backward_step_one(i, train_data_y)
+          i -= 1
+        end
+        i = @array_of_layers.size - 1
+        while i > 1
+          fit_backward_step_two(i - 1, alpha)
+          i -= 1
+        end
+      end
+    elsif optimizer == 'mini-batch-gd'
+      mb = 0
+      while mb < train_data_x.size
+        fit_forward(train_data_x[mb], 0)
         i = 1
         while i < @array_of_layers.size - 1
           fit_forward(@array_of_z[i - 1], i)
           if i == @array_of_layers.size - 2
-            puts 'Train Error: ' + apply_cost(cost_function, @array_of_a[i].flatten, train_data_y, i).to_s
+            puts 'Epoch: ' + (mb).to_s + ' of: ' + (train_data_x.size - 1).to_s + ', train error: ' + apply_cost(cost_function, @array_of_a[i].flatten, train_data_y[mb], i).to_s
           end
           i += 1
         end
@@ -86,7 +132,7 @@ class NN
         iterations.times do
           i = @array_of_layers.size - 1
           while i > 1
-            fit_backward_step_one(i, train_data_y)
+            fit_backward_step_one(i, train_data_y[mb])
             i -= 1
           end
           i = @array_of_layers.size - 1
@@ -95,55 +141,7 @@ class NN
             i -= 1
           end
         end
-      elsif optimizer == 'mini-batch-gd'
-        mb = 0
-        while mb < train_data_x.size
-          fit_forward(train_data_x[mb], 0)
-          i = 1
-          while i < @array_of_layers.size - 1
-            fit_forward(@array_of_z[i - 1], i)
-            if i == @array_of_layers.size - 2
-              puts 'Train Error: ' + apply_cost(cost_function, @array_of_a[i].flatten, train_data_y[mb], i).to_s
-            end
-            i += 1
-          end
-
-          array_of_d = []
-          i = 0
-          while i < @array_of_a.size
-            array_of_d[i] = []
-            tmp = @g.random_matrix(@array_of_a[i].size, @array_of_a[i][0].size, 0.0..0.1)
-            j = 0
-            while j < tmp.size
-              array_of_d[i][j] = []
-              k = 0
-              while k < tmp[j].size
-                if tmp[j][k] < @array_of_dropouts[i]
-                  array_of_d[i][j][k]  = 1.0
-                else
-                  array_of_d[i][j][k]  = 0.0
-                end
-                k += 1
-              end
-              j += 1
-            end
-            @array_of_a[i] = @mm.mult(@mm.mult(@array_of_a[i], array_of_d[i]), (1.0 / @array_of_dropouts[i])) #/
-            i += 1
-          end
-          iterations.times do
-            i = @array_of_layers.size - 1
-            while i > 1
-              fit_backward_step_one(i, train_data_y[mb])
-              i -= 1
-            end
-            i = @array_of_layers.size - 1
-            while i > 1
-              fit_backward_step_two(i - 1, alpha)
-              i -= 1
-            end
-          end
-          mb += 1
-        end
+        mb += 1
       end
     end
     @array_of_a.last
