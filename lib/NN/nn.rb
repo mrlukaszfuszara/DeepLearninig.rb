@@ -1,7 +1,7 @@
 class NN
   attr_reader :error
 
-  def initialize(data_x_size = nil)
+  def initialize(data_x_vertical_size, data_x_horizontal_size = nil)
     @mm = MatrixMath.new
     @g = Generators.new
     @a = Activations.new
@@ -13,9 +13,10 @@ class NN
     @array_of_weights = []
     @array_of_bias = []
 
-    add_nn(data_x_size, 'nil')
+    @features = data_x_vertical_size
+    @samples = data_x_horizontal_size
 
-    @features = data_x_size
+    add_nn(@features, 'nil')
   end
 
   def add_nn(batch_size, activation, dropout = 1.0)
@@ -24,8 +25,7 @@ class NN
     @array_of_dropouts << dropout
   end
 
-  def compile(samples)
-    @samples = samples
+  def compile
     i = 1
     while i < @array_of_layers.size
       @array_of_weights << create_weights(i)
@@ -38,7 +38,7 @@ class NN
     end
   end
 
-  def fit(train_data_x, train_data_y, cost_function, optimizer, alpha, iterations, regularization_l2 = nil)
+  def fit(train_data_x, train_data_y, cost_function, optimizer, alpha, iterations, regularization_l2 = nil, batch_size = nil)
     @regularization_l2 = regularization_l2
     @cost_function = cost_function
 
@@ -95,6 +95,9 @@ class NN
         end
       end
     elsif optimizer == 'mini-batch-gd'
+      smb = SplitterMB.new(batch_size, train_data_x, train_data_y)
+      train_data_x = smb.data_x
+      train_data_y = smb.data_y
       mb = 0
       while mb < train_data_x.size
         @array_of_z = []
