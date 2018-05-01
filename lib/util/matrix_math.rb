@@ -22,6 +22,21 @@ class MatrixMath
     sum
   end
 
+  def matrix_sqrt(matrix)
+    array = []
+    i = 0
+    while i < matrix.size
+      array[i] = []
+      j = 0
+      while j < matrix[i].size
+        array[i][j] = Math.sqrt matrix[i][j]
+        j += 1
+      end
+      i += 1
+    end
+    array
+  end
+
   def add_reversed(variable1, variable2)
     one = matrix_check(variable1)
     two = matrix_check(variable2)
@@ -325,7 +340,20 @@ class MatrixMath
     two = matrix_check(variable2)
     array = []
     if one == 2 && two == 2
-      puts 'Div Error: Matrix / Matrix'
+      if variable1.size == variable2.size && variable1[0].size == variable2[0].size
+        i = 0
+        while i < variable1.size
+          array[i] = []
+          j = 0
+          while j < variable1[0].size
+            array[i][j] = variable1[i][j] / variable2[i][j]
+            j += 1
+          end
+          i += 1
+        end
+      else
+        puts 'Div Matrix / Matrix: Size error'
+      end
     elsif one == 2 && two == 1
       puts 'Div Error: Matrix / Vector'
     elsif one == 2 && two.zero?

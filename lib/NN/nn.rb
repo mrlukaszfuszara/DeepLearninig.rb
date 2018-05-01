@@ -142,18 +142,18 @@ class NN
         iterations.times do
           i = @array_of_layers.size - 1
           while i > 1
-            fit_backward_step_one(i, train_data_y[@mb], nil)
+            fit_backward_step_one(i, train_data_y[@mb])
             i -= 1
           end
           i = @array_of_layers.size - 1
           while i > 1
-            fit_backward_step_two(i - 1, alpha, nil)
+            fit_backward_step_two(i - 1, alpha)
             i -= 1
           end
         end
         @mb += 1
       end
-    elsif optimizer == 'mini-batch-gd-w-momentum'
+    elsif optimizer == 'mini-batch-gd-w-momentum' || optimizer == 'RMSprop'
       smb = SplitterMB.new(batch_size, train_data_x, train_data_y)
       train_data_x = smb.data_x
       train_data_y = smb.data_y
@@ -203,12 +203,12 @@ class NN
         iterations.times do
           i = @array_of_layers.size - 1
           while i > 1
-            fit_backward_step_one(i, train_data_y[@mb], momentum)
+            fit_backward_step_one(i, train_data_y[@mb], momentum, optimizer)
             i -= 1
           end
           i = @array_of_layers.size - 1
           while i > 1
-            fit_backward_step_two(i - 1, alpha, momentum)
+            fit_backward_step_two(i - 1, alpha, optimizer)
             i -= 1
           end
         end
@@ -294,7 +294,7 @@ class NN
     @array_of_a[counter] = apply_a(@array_of_z[counter], counter + 1)
   end
 
-  def fit_backward_step_one(counter, data_y, momentum)
+  def fit_backward_step_one(counter, data_y, momentum = nil, optimizer = nil)
     if counter == @array_of_layers.size - 1
       if @cost_function == 'mse'
         @array_of_delta_a << @mm.subt(@array_of_a[counter - 1], data_y)
@@ -314,32 +314,48 @@ class NN
     end
     @array_of_delta_b[counter - 2] = @mm.mult(delta_z, (1.0 / @samples)) #/
 
-    if !momentum.nil?
+    if !optimizer.nil?
       if @mb.zero?
         @array_of_v_delta_w[counter - 2] = @g.zero_matrix(@array_of_delta_w[counter - 2].size, @array_of_delta_w[counter - 2][0].size)
         @array_of_v_delta_b[counter - 2] = @g.zero_matrix(@array_of_delta_b[counter - 2].size, @array_of_delta_b[counter - 2][0].size)
-      elsif @mb == 1
-        @array_of_v_delta_w[counter - 2] = @mm.mult(@array_of_v_delta_w[counter - 2], (1.0 / (momentum**@mb)))
-        @array_of_v_delta_b[counter - 2] = @mm.mult(@array_of_v_delta_b[counter - 2], (1.0 / (momentum**@mb)))
       end
+      if optimizer == 'mini-batch-gd-w-momentum'
+        tmp1 = @mm.mult(@array_of_v_delta_w[counter - 2], momentum)
+        tmp2 = @mm.mult(@array_of_delta_w[counter - 2], (1.0 - momentum))
+        @array_of_v_delta_w[counter - 2] = @mm.add(tmp1, tmp2)
 
-      tmp1 = @mm.mult(@array_of_v_delta_w[counter - 2], momentum)
-      tmp2 = @mm.mult(@array_of_delta_w[counter - 2], (1.0 - momentum))
-      @array_of_v_delta_w[counter - 2] = @mm.add(tmp1, tmp2)
+        tmp1 = @mm.mult(@array_of_v_delta_b[counter - 2], momentum)
+        tmp2 = @mm.mult(@array_of_delta_b[counter - 2], (1.0 - momentum))
+        @array_of_v_delta_b[counter - 2] = @mm.add(tmp1, tmp2)
+      elsif optimizer == 'RMSprop'
+        tmp1 = @mm.mult(@array_of_v_delta_w[counter - 2], momentum)
+        tmp2 = @mm.mult(@mm.mult(@array_of_delta_w[counter - 2], @array_of_delta_w[counter - 2]), (1.0 - momentum))
+        @array_of_v_delta_w[counter - 2] = @mm.add(tmp1, tmp2)
 
-      tmp1 = @mm.mult(@array_of_v_delta_b[counter - 2], momentum)
-      tmp2 = @mm.mult(@array_of_delta_b[counter - 2], (1.0 - momentum))
-      @array_of_v_delta_b[counter - 2] = @mm.add(tmp1, tmp2)
+        tmp1 = @mm.mult(@array_of_v_delta_b[counter - 2], momentum)
+        tmp2 = @mm.mult(@mm.mult(@array_of_delta_b[counter - 2], @array_of_delta_b[counter - 2]), (1.0 - momentum))
+        @array_of_v_delta_b[counter - 2] = @mm.add(tmp1, tmp2)
+      end
     end
   end
 
-  def fit_backward_step_two(counter, alpha, momentum)
-    if momentum.nil?
+  def fit_backward_step_two(counter, alpha, optimizer)
+    if optimizer.nil?
       @array_of_weights[counter] = @mm.subt(@array_of_weights[counter], @mm.mult(@array_of_delta_w[counter - 1], alpha))
       @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @mm.mult(@array_of_delta_b[counter - 1], alpha))
     else
-      @array_of_weights[counter] = @mm.subt(@array_of_weights[counter], @mm.mult(@array_of_v_delta_w[counter - 1], alpha))
-      @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @mm.mult(@array_of_v_delta_b[counter - 1], alpha))
+      if optimizer == 'mini-batch-gd-w-momentum'
+        @array_of_weights[counter] = @mm.subt(@array_of_weights[counter], @mm.mult(@array_of_v_delta_w[counter - 1], alpha))
+        @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @mm.mult(@array_of_v_delta_b[counter - 1], alpha))
+      elsif optimizer == 'RMSprop'
+        tmp1 = @mm.matrix_sqrt(@array_of_v_delta_w[counter - 1])
+        tmp2 = @mm.div(@array_of_delta_w[counter - 1], tmp1)
+        @array_of_weights[counter] = @mm.subt(@array_of_weights[counter], @mm.mult(tmp2, alpha))
+
+        tmp1 = @mm.matrix_sqrt(@array_of_v_delta_b[counter - 1])
+        tmp2 = @mm.div(@array_of_delta_b[counter - 1], tmp1)
+        @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @mm.mult(tmp2, alpha))
+      end
     end
   end
 

@@ -69,24 +69,21 @@ test_set = stdt.dev
 train_set_x = train_set[0]
 train_set_y = train_set[1]
 
-n = Normalization.new
-train_set_x = n.subt_mean(train_set_x)
-
-batch_size = 64
+batch_size = 16
 
 dev_set_x = dev_set[0]
 dev_set_y = dev_set[1]
 test_set_x = test_set[0]
 test_set_y = test_set[1]
 
-optimizer = 'mini-batch-gd-w-momentum'
+optimizer = 'RMSprop'
 cost_function = 'mse'
 learning_rate = 0.0001
-momentum = 0.75
+momentum = 0.9
 regularization_l2 = 0.01
 iterations = 200
 
 main = Main.new
 main.train(train_set_x, train_set_y, cost_function, optimizer, learning_rate, iterations, regularization_l2, batch_size, momentum)
 
-p main.predict(dev_set_x, dev_set_y, cost_function, regularization_l2)
+main.predict(dev_set_x, dev_set_y, cost_function, regularization_l2)
