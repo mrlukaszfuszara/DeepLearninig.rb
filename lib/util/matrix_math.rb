@@ -380,7 +380,7 @@ class MatrixMath
     elsif one == 1 && two.zero?
       i = 0
       while i < variable1.size
-        array[i] = variable1[i] /+ variable2
+        array[i] = variable1[i] / variable2
         i += 1
       end
     end

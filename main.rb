@@ -12,13 +12,12 @@ require './lib/util/costs'
 require './lib/nn/nn'
 
 class Main
-  def train(data_x, data_y, cost_function, optimizer, learning_rate, iterations, regularization_l2, batch_size = nil, momentum = nil)
+  def train(epochs, data_x, data_y, cost_function, optimizer, learning_rate, iterations, regularization_l2, batch_size = nil)
     nn = NN.new(data_x[0].size, batch_size)
-    nn.add_nn(16, 'leaky_relu')
-    nn.add_nn(6, 'leaky_relu')
+    nn.add_nn(64, 'leaky_relu', 0.9)
     nn.add_nn(1, 'leaky_relu')
     nn.compile
-    tmp = nn.fit(data_x, data_y, cost_function, optimizer, learning_rate, iterations, nil, batch_size, momentum)
+    tmp = nn.fit(epochs, data_x, data_y, cost_function, optimizer, learning_rate, iterations, nil, batch_size)
     nn.save_weights('./weights.msh')
     nn.save_architecture('./arch.msh')
     tmp
@@ -69,21 +68,21 @@ test_set = stdt.dev
 train_set_x = train_set[0]
 train_set_y = train_set[1]
 
-batch_size = 16
+batch_size = 32
 
 dev_set_x = dev_set[0]
 dev_set_y = dev_set[1]
 test_set_x = test_set[0]
 test_set_y = test_set[1]
 
-optimizer = 'RMSprop'
+epochs = 4
+optimizer = 'Adam'
 cost_function = 'mse'
 learning_rate = 0.0001
-momentum = 0.9
 regularization_l2 = 0.01
 iterations = 200
 
 main = Main.new
-main.train(train_set_x, train_set_y, cost_function, optimizer, learning_rate, iterations, regularization_l2, batch_size, momentum)
+main.train(epochs, train_set_x, train_set_y, cost_function, optimizer, learning_rate, iterations, regularization_l2, batch_size,)
 
-main.predict(dev_set_x, dev_set_y, cost_function, regularization_l2)
+p main.predict(dev_set_x, dev_set_y, cost_function, regularization_l2)
