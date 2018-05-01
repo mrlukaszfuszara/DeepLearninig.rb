@@ -4,20 +4,43 @@ class Normalization
   end
 
   def subt_mean(matrix)
-    l = matrix_check(matrix)
-    if l == 2
-      mean = @mm.mult(@mm.vertical_sum(matrix), (1.0 / matrix.size))
-      tmp = @mm.subt_reversed(matrix, mean)
-    elsif l == 1
-      mean = matrix.inject(:+) * (1.0 / matrix.size)
-      tmp = @mm.subt(matrix, mean)
+    mean = []
+    i = 0
+    while i < matrix.size
+      tmp = matrix[i].inject(:+)
+      mean[i] = tmp / matrix.size
+      i += 1
     end
-    tmp
+    @mm.subt_reversed(matrix, mean)
   end
 
   def normalize_variance(matrix)
-    sigma_sqr = @mm.mult(@mm.vertical_sum(@mm.mult(matrix, 2.0)), (1.0 / matrix.size))
-    @mm.div_reversed(matrix, sigma_sqr)
+    mean = []
+    i = 0
+    while i < matrix.size
+      tmp = matrix[i].inject(:+)
+      mean[i] = tmp / matrix.size
+      i += 1
+    end
+    sigma = []
+    i = 0
+    while i < matrix.size
+      sigma[i] = []
+      j = 0
+      while j < matrix[i].size
+        sigma[i][j] = (matrix[i][j] - mean[j])**2
+        j += 1
+      end
+      i += 1
+    end
+    sigma_ready = []
+    i = 0
+    while i < sigma.size
+      tmp = sigma[i].inject(:+)
+      sigma_ready[i] = tmp / matrix.size
+      i += 1
+    end
+    @mm.div_reversed(matrix, sigma_ready)
   end
 
   def matrix_check(variable)

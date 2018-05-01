@@ -38,7 +38,7 @@ class NN
     end
   end
 
-  def fit(epochs, train_data_x, train_data_y, cost_function, optimizer, alpha, iterations, regularization_l2 = nil, batch_size = nil, momentum = [0.9, 0.999, 10**-8])
+  def fit(epochs, train_data_x, train_data_y, cost_function, optimizer, alpha, iterations, decay_rate, regularization_l2 = nil, batch_size = nil, momentum = [0.9, 0.999, 10**-8])
     @regularization_l2 = regularization_l2
     @cost_function = cost_function
     smb = SplitterMB.new(batch_size, train_data_x, train_data_y)
@@ -46,6 +46,7 @@ class NN
     train_data_y = smb.data_y
     counter = 0
     epochs.times do |t|
+      alpha = alpha / (1.0 + decay_rate * t) 
       if optimizer == 'BGD'
         @mb = 0
         while @mb < train_data_x.size
