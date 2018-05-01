@@ -17,7 +17,7 @@ class Main
     nn.add_nn(24, 'leaky_relu', 0.4)
     nn.add_nn(1, 'leaky_relu')
     nn.compile(data_x.size)
-    tmp = nn.fit(data_x, data_y, cost_function, learning_rate, epochs, iterations)
+    tmp = nn.fit(data_x, data_y, cost_function, learning_rate, epochs, iterations, regularization_l2)
     nn.save_weights('./test')
     tmp
   end
@@ -30,7 +30,7 @@ class Main
     nn.add_nn(24, 'leaky_relu')
     nn.add_nn(1, 'leaky_relu')
     nn.load_weights('./test')
-    nn.predict(data_x, data_y, cost_function)
+    nn.predict(data_x, data_y, cost_function, regularization_l2)
   end
 end
 
@@ -39,8 +39,8 @@ g = Generators.new
 data_x = g.random_matrix(30, 3, 0.0..1.0)
 data_y = g.random_vector(30, 0.0..1.0)
 
-#data_x = [[0.1, 0.7, 0.1],[0.1, 0.2, 0.1],[0.1, 0.3, 0.1],[0.1, 0.6, 0.1],[0.1, 0.2, 0.1]]
-#data_y = [0.1,0.1,0.1,0.1,0.1]
+data_x = [[0.1, 0.7, 0.1],[0.1, 0.2, 0.1],[0.1, 0.3, 0.1],[0.1, 0.6, 0.1],[0.1, 0.2, 0.1]]
+data_y = [0.1,0.1,0.1,0.1,0.1]
 
 s = Spliter.new(data_x, data_y)
 train_set = s.train
@@ -55,7 +55,7 @@ test_set_x = test_set[0]
 test_set_y = test_set[1]
 
 cost_function = 'mse'
-learning_rate = 0.01
+learning_rate = 0.1
 epochs = 100
 regularization_l2 = 0.1
 iterations = 2

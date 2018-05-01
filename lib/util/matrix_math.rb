@@ -340,7 +340,15 @@ class MatrixMath
         i += 1
       end
     elsif one == 1 && two == 1
-      puts 'Div Error: Vector / Vector'
+      if variable1.size == variable2.size
+        i = 0
+        while i < variable1.size
+          array[i] = variable1[i] / variable2[i]
+          i += 1
+        end
+      else
+        puts 'Div Vector / Vector: Size error'
+      end
     elsif one == 1 && two.zero?
       i = 0
       while i < variable1.size

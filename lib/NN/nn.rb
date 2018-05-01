@@ -1,7 +1,7 @@
 class NN
   attr_reader :error
 
-  def initialize(data_x_size = nil, weights = nil)
+  def initialize(data_x_size = nil)
     @mm = MatrixMath.new
     @g = Generators.new
     @a = Activations.new
@@ -40,6 +40,7 @@ class NN
 
   def fit(train_data_x, train_data_y, cost_function, alpha, epochs, iterations, regularization_l2 = nil)
     @regularization_l2 = regularization_l2
+    @cost_function = cost_function
     epochs.times do
       @array_of_z = []
       @array_of_a = []
@@ -117,7 +118,7 @@ class NN
     while i < @array_of_layers.size - 1
       predict_forward(@array_of_z[i - 1], i)
       if i == @array_of_layers.size - 2
-        puts 'Train Error: ' + apply_cost(cost_function, @array_of_a[i].flatten, dev_data_y, i).to_s
+        puts 'Prediction Error: ' + apply_cost(cost_function, @array_of_a[i].flatten, dev_data_y, i).to_s
       end
       i += 1
     end
@@ -151,7 +152,15 @@ class NN
   end
 
   def fit_backward_step_one(counter, data_y)
-    @array_of_delta_a[counter] = @mm.subt(@array_of_a[counter - 1], data_y) if counter == @array_of_layers.size - 1
+    if counter == @array_of_layers.size - 1
+      if @cost_function == 'mse'
+        @array_of_delta_a[counter] = @mm.subt(@array_of_a[counter - 1], data_y)
+      elsif @cost_function == 'cross_entropy'
+        tmp1 = @mm.mult(@mm.div(data_y, @array_of_a[counter - 1].flatten), -1.0)
+        tmp2 = @mm.div(@mm.subt(data_y, 1.0), @mm.subt(@array_of_a[counter - 1].flatten, 1.0))
+        @array_of_delta_a[counter] = [@mm.add(tmp1, tmp2)]
+      end
+    end
     @array_of_delta_z[counter] = @mm.mult(@array_of_delta_a[counter], apply_d(@array_of_z[counter - 1], counter))
     @array_of_delta_a[counter - 1] = @mm.dot(@array_of_weights[counter - 1].transpose, @array_of_delta_z[counter])
     if !@regularization_l2.nil?
