@@ -38,7 +38,7 @@ class NN
     end
   end
 
-  def fit(train_data_x, train_data_y, cost_function, optimizer, alpha, iterations, regularization_l2 = nil, batch_size = nil)
+  def fit(train_data_x, train_data_y, cost_function, optimizer, alpha, iterations, regularization_l2 = nil, batch_size = nil, momentum = nil)
     @regularization_l2 = regularization_l2
     @cost_function = cost_function
 
@@ -98,20 +98,21 @@ class NN
       smb = SplitterMB.new(batch_size, train_data_x, train_data_y)
       train_data_x = smb.data_x
       train_data_y = smb.data_y
-      mb = 0
-      while mb < train_data_x.size
+      @mb = 0
+      while @mb < train_data_x.size
         @array_of_z = []
         @array_of_a = []
 
         @array_of_delta_a = []
         @array_of_delta_w = []
         @array_of_delta_b = []
-        fit_forward(train_data_x[mb], 0)
+
+        fit_forward(train_data_x[@mb], 0)
         i = 1
         while i < @array_of_layers.size - 1
           fit_forward(@array_of_z[i - 1], i)
           if i == @array_of_layers.size - 2
-            puts 'Epoch: ' + (mb).to_s + ' of: ' + (train_data_x.size - 1).to_s + ', train error: ' + apply_cost(cost_function, @array_of_a[i].flatten, train_data_y[mb], i).to_s
+            puts 'Epoch: ' + (@mb).to_s + ' of: ' + (train_data_x.size - 1).to_s + ', train error: ' + apply_cost(cost_function, @array_of_a[i].flatten, train_data_y[@mb], i).to_s
           end
           i += 1
         end
@@ -141,16 +142,77 @@ class NN
         iterations.times do
           i = @array_of_layers.size - 1
           while i > 1
-            fit_backward_step_one(i, train_data_y[mb])
+            fit_backward_step_one(i, train_data_y[@mb], nil)
             i -= 1
           end
           i = @array_of_layers.size - 1
           while i > 1
-            fit_backward_step_two(i - 1, alpha)
+            fit_backward_step_two(i - 1, alpha, nil)
             i -= 1
           end
         end
-        mb += 1
+        @mb += 1
+      end
+    elsif optimizer == 'mini-batch-gd-w-momentum'
+      smb = SplitterMB.new(batch_size, train_data_x, train_data_y)
+      train_data_x = smb.data_x
+      train_data_y = smb.data_y
+      @array_of_v_delta_w = []
+      @array_of_v_delta_b = []
+      @mb = 0
+      while @mb < train_data_x.size
+        @array_of_z = []
+        @array_of_a = []
+
+        @array_of_delta_a = []
+        @array_of_delta_w = []
+        @array_of_delta_b = []
+
+        fit_forward(train_data_x[@mb], 0)
+        i = 1
+        while i < @array_of_layers.size - 1
+          fit_forward(@array_of_z[i - 1], i)
+          if i == @array_of_layers.size - 2
+            puts 'Epoch: ' + (@mb).to_s + ' of: ' + (train_data_x.size - 1).to_s + ', train error: ' + apply_cost(cost_function, @array_of_a[i].flatten, train_data_y[@mb], i).to_s
+          end
+          i += 1
+        end
+
+        array_of_d = []
+        i = 0
+        while i < @array_of_a.size
+          array_of_d[i] = []
+          tmp = @g.random_matrix(@array_of_a[i].size, @array_of_a[i][0].size, 0.0..1.0)
+          j = 0
+          while j < tmp.size
+            array_of_d[i][j] = []
+            k = 0
+            while k < tmp[j].size
+              if tmp[j][k] < @array_of_dropouts[i]
+                array_of_d[i][j][k]  = 1.0
+              else
+                array_of_d[i][j][k]  = 0.0
+              end
+              k += 1
+            end
+            j += 1
+          end
+          @array_of_a[i] = @mm.mult(@mm.mult(@array_of_a[i], array_of_d[i]), (1.0 / @array_of_dropouts[i])) #/
+          i += 1
+        end
+        iterations.times do
+          i = @array_of_layers.size - 1
+          while i > 1
+            fit_backward_step_one(i, train_data_y[@mb], momentum)
+            i -= 1
+          end
+          i = @array_of_layers.size - 1
+          while i > 1
+            fit_backward_step_two(i - 1, alpha, momentum)
+            i -= 1
+          end
+        end
+        @mb += 1
       end
     end
     @array_of_a.last
@@ -232,7 +294,7 @@ class NN
     @array_of_a[counter] = apply_a(@array_of_z[counter], counter + 1)
   end
 
-  def fit_backward_step_one(counter, data_y)
+  def fit_backward_step_one(counter, data_y, momentum)
     if counter == @array_of_layers.size - 1
       if @cost_function == 'mse'
         @array_of_delta_a << @mm.subt(@array_of_a[counter - 1], data_y)
@@ -251,11 +313,34 @@ class NN
       @array_of_delta_w[counter - 2] = @mm.mult(@mm.dot(delta_z, @array_of_a[counter - 2].transpose), (1.0 / @samples)) #/
     end
     @array_of_delta_b[counter - 2] = @mm.mult(delta_z, (1.0 / @samples)) #/
+
+    if !momentum.nil?
+      if @mb.zero?
+        @array_of_v_delta_w[counter - 2] = @g.zero_matrix(@array_of_delta_w[counter - 2].size, @array_of_delta_w[counter - 2][0].size)
+        @array_of_v_delta_b[counter - 2] = @g.zero_matrix(@array_of_delta_b[counter - 2].size, @array_of_delta_b[counter - 2][0].size)
+      elsif @mb == 1
+        @array_of_v_delta_w[counter - 2] = @mm.mult(@array_of_v_delta_w[counter - 2], (1.0 / (momentum**@mb)))
+        @array_of_v_delta_b[counter - 2] = @mm.mult(@array_of_v_delta_b[counter - 2], (1.0 / (momentum**@mb)))
+      end
+
+      tmp1 = @mm.mult(@array_of_v_delta_w[counter - 2], momentum)
+      tmp2 = @mm.mult(@array_of_delta_w[counter - 2], (1.0 - momentum))
+      @array_of_v_delta_w[counter - 2] = @mm.add(tmp1, tmp2)
+
+      tmp1 = @mm.mult(@array_of_v_delta_b[counter - 2], momentum)
+      tmp2 = @mm.mult(@array_of_delta_b[counter - 2], (1.0 - momentum))
+      @array_of_v_delta_b[counter - 2] = @mm.add(tmp1, tmp2)
+    end
   end
 
-  def fit_backward_step_two(counter, alpha)
-    @array_of_weights[counter] = @mm.subt(@array_of_weights[counter], @mm.mult(@array_of_delta_w[counter - 1], alpha))
-    @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @mm.mult(@array_of_delta_b[counter - 1], alpha))
+  def fit_backward_step_two(counter, alpha, momentum)
+    if momentum.nil?
+      @array_of_weights[counter] = @mm.subt(@array_of_weights[counter], @mm.mult(@array_of_delta_w[counter - 1], alpha))
+      @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @mm.mult(@array_of_delta_b[counter - 1], alpha))
+    else
+      @array_of_weights[counter] = @mm.subt(@array_of_weights[counter], @mm.mult(@array_of_v_delta_w[counter - 1], alpha))
+      @array_of_bias[counter] = @mm.subt(@array_of_bias[counter], @mm.mult(@array_of_v_delta_b[counter - 1], alpha))
+    end
   end
 
   def apply_cost(cost_function, data_x, data_y, counter)
