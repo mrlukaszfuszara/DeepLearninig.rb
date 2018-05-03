@@ -14,20 +14,21 @@ require './lib/nn/nn'
 class Main
   def train(epochs, data_x, data_y, cost_function, optimizer, learning_rate, iterations, decay_rate, regularization_l2, batch_size = nil)
     nn = NN.new(data_x[0].size, batch_size)
-    nn.add_nn(64, 'leaky_relu', 0.9)
+    nn.add_nn(8, 'leaky_relu', 0.9)
+    nn.add_nn(8, 'leaky_relu', 0.9)
     nn.add_nn(1, 'leaky_relu')
     nn.compile
-    tmp = nn.fit(epochs, data_x, data_y, cost_function, optimizer, learning_rate, iterations, decay_rate, nil, batch_size)
+    tmp = nn.fit(epochs, data_x, data_y, cost_function, optimizer, learning_rate, iterations, decay_rate, regularization_l2, batch_size)
     nn.save_weights('./weights.msh')
     nn.save_architecture('./arch.msh')
     tmp
   end
 
-  def predict(data_x, data_y, cost_function, regularization_l2)
+  def predict(data_x, data_y, cost_function, regularization_l2, batch_size)
     nn = NN.new(data_x[0].size)
     nn.load_architecture('./arch.msh')
     nn.load_weights('./weights.msh')
-    nn.predict(data_x, data_y, cost_function)
+    nn.predict(data_x, data_y, cost_function, regularization_l2, batch_size)
   end
 end
 
@@ -76,20 +77,27 @@ test_set_x = test_set[0]
 test_set_y = test_set[1]
 
 n = Normalization.new
-n.normalize_variance(test_set_x)
+train_set_x = n.subt_mean(train_set_x)
+mean = n.mean
+
 n = Normalization.new
-n.normalize_variance(dev_set_x)
+dev_set_x = n.subt_mean(dev_set_x, mean)
 
 epochs = 4
 optimizer = 'Adam'
 cost_function = 'mse'
-learning_rate = 0.0001
-regularization_l2 = 0.01
-iterations = 200
+learning_rate = 0.00001
+regularization_l2 = 0.1
+iterations = 30
 decay_rate = 1
+
+test_x = [[6.3,0.48,0.04,1.1,0.046,30,99,0.9928,3.24,0.36,9.6]]
+test_y = [8]
 
 main = Main.new
 main.train(epochs, train_set_x, train_set_y, cost_function, optimizer, learning_rate, iterations, decay_rate, regularization_l2, batch_size,)
 
-tmp = main.predict(dev_set_x, dev_set_y, cost_function, regularization_l2)
-p tmp
+#tmp = main.predict(test_x, test_y, cost_function, regularization_l2)
+#p tmp
+
+p main.predict(dev_set_x, dev_set_y, cost_function, regularization_l2, batch_size)

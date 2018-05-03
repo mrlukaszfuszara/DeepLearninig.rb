@@ -52,4 +52,31 @@ class Generators
     end
     array
   end
+
+  def one_matrix(size_rows, size_cols)
+    r = Random.new
+    array = []
+    i = 0
+    while i < size_rows
+      array[i] = []
+      j = 0
+      while j < size_cols
+        array[i][j] = 1.0
+        j += 1
+      end
+      i += 1
+    end
+    array
+  end
+
+  def one_vector(size_rows)
+    r = Random.new
+    array = []
+    i = 0
+    while i < size_rows
+      array[i] = 1.0
+      i += 1
+    end
+    array
+  end
 end

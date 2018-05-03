@@ -37,31 +37,11 @@ class MatrixMath
     array
   end
 
-  def subt_reversed(variable1, variable2)
+  def vector_sqrt(vector)
     array = []
     i = 0
-    while i < variable1.size
-      array[i] = []
-      j = 0
-      while j < variable1[0].size
-        array[i][j] = variable1[i][j] - variable2[j]
-        j += 1
-      end
-      i += 1
-    end
-    array
-  end
-
-  def div_reversed(variable1, variable2)
-    array = []
-    i = 0
-    while i < variable1.size
-      array[i] = []
-      j = 0
-      while j < variable1[0].size
-        array[i][j] = variable1[i][j] / variable2[j]
-        j += 1
-      end
+    while i < vector.size
+      array[i] = Math.sqrt vector[i]
       i += 1
     end
     array
@@ -107,7 +87,7 @@ class MatrixMath
         while i < variable1.size
           array[i] = []
           j = 0
-          while j < variable2.size
+          while j < variable1[0].size
             array[i][j] = variable1[i][j] + variable2[j]
             j += 1
           end
@@ -172,7 +152,7 @@ class MatrixMath
         while i < variable1.size
           array[i] = []
           j = 0
-          while j < variable2.size
+          while j < variable1[0].size
             array[i][j] = variable1[i][j] - variable2[j]
             j += 1
           end
@@ -237,7 +217,7 @@ class MatrixMath
         while i < variable1.size
           array[i] = []
           j = 0
-          while j < variable2.size
+          while j < variable1[0].size
             array[i][j] = variable1[i][j] * variable2[j]
             j += 1
           end
@@ -354,12 +334,13 @@ class MatrixMath
         puts 'Dot Matrix @ Matrix: Size error'
       end
     elsif one == 2 && two == 1
+      p variable1[0].size, variable2.size
       if  variable1[0].size == variable2.size
         i = 0
         while i <  variable1.size
           array[i] = 0
           j = 0
-          while j <  variable1[i].size
+          while j <  variable1[0].size
             array[i] +=  variable1[i][j] * variable2[j]
             j += 1
           end
@@ -399,13 +380,15 @@ class MatrixMath
   end
 
   def horizontal_sum(matrix)
+    matrix = matrix.transpose
+
     array = []
     i = 0
-    while i < matrix[0].size
+    while i < matrix.size
       array[i] = 0
       j = 0
-      while j < matrix.size
-        array[i] += matrix[j][i]
+      while j < matrix[i].size
+        array[i] += matrix[i][j]
         j += 1
       end
       i += 1
