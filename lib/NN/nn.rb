@@ -8,6 +8,7 @@ class NN
     @array_of_layers = []
     @array_of_activations = []
     @array_of_dropouts = []
+    @array_of_batch_norms = []
     @array_of_weights = []
     @array_of_bias = []
 
@@ -17,13 +18,21 @@ class NN
     add_nn(@features, 'nil')
   end
 
-  def add_nn(batch_size, activation, dropout = 1.0)
+  def add_nn(batch_size, activation, dropout = 1.0, batch_norm = nil)
     @array_of_layers << batch_size
     @array_of_activations << activation
     @array_of_dropouts << dropout
+    @array_of_batch_norms << batch_norm
   end
 
-  def compile
+  def compile(optimizer, cost_function, learning_rate = 0.000001, decay_rate = 1, iterations = 10, regularization_l2 = 0.1, momentum = [0.9, 0.999, 10**-8])
+    @cost_function = cost_function
+    @optimizer = optimizer
+    @learning_rate = learning_rate
+    @decay_rate = decay_rate
+    @iterations = iterations
+    @regularization_l2 = regularization_l2
+    @momentum = momentum
     i = 0
     while i < @array_of_layers.size - 1
       @array_of_bias << create_bias(i)
@@ -36,17 +45,14 @@ class NN
     end
   end
 
-  def fit(epochs, train_data_x, train_data_y, cost_function, optimizer, alpha, iterations, decay_rate, regularization_l2 = nil, batch_size = nil, momentum = [0.9, 0.999, 10**-8])
-    @regularization_l2 = regularization_l2
-    @cost_function = cost_function
-
+  def fit(train_data_x, train_data_y, batch_size, epochs = 10)
     smb = SplitterMB.new(batch_size, train_data_x, train_data_y)
     train_data_x = smb.data_x
     train_data_y = smb.data_y
 
     counter = 0
     epochs.times do |t|
-      alpha = alpha / (1.0 + decay_rate * t)
+      @learning_rate = @learning_rate / (1.0 + @decay_rate * t)
 
       time = []
 
@@ -68,25 +74,25 @@ class NN
         @array_of_z = []
 
         counter += 1
-        create_layers(train_data_x)
+        create_layers(train_data_x, mini_batch_samples)
 
         if mini_batch_samples.zero? || mini_batch_samples == 1 || clear
-          puts 'Iter: ' + (counter * iterations).to_s + ' of: ' + (epochs * train_data_x.size * iterations).to_s + ', train error: ' + \
-            apply_cost(cost_function, train_data_x.size, train_data_y[mini_batch_samples]).to_s + ', ends: ' + '~' + ' minutes'
+          puts 'Iter: ' + (counter * @iterations).to_s + ' of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
+            apply_cost(train_data_y).to_s + ', ends: ' + '~' + ' minutes'
         else
-          puts 'Iter: ' + (counter * iterations).to_s + ' of: ' + (epochs * train_data_x.size * iterations).to_s + ', train error: ' + \
-            apply_cost(cost_function, train_data_x.size, train_data_y[mini_batch_samples]).to_s + ', ends: ' + clock.to_s + ' minutes'
+          puts 'Iter: ' + (counter * @iterations).to_s + ' of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
+            apply_cost(train_data_y).to_s + ', ends: ' + clock.to_s + ' minutes'
         end
 
         apply_dropout
 
         create_delta_arrays
 
-        iterations.times do |r|
+        @iterations.times do
           @array_of_delta_w = []
           @array_of_delta_b = []
-          back_propagation(train_data_x[mini_batch_samples], train_data_y[mini_batch_samples], momentum, optimizer, r)
-          update_weights(alpha, momentum, optimizer)
+          back_propagation(train_data_x[mini_batch_samples], train_data_y[mini_batch_samples])
+          update_weights
         end
 
         @end_time = Time.new
@@ -96,7 +102,7 @@ class NN
     @array_of_a.last
   end
 
-  def predict(dev_data_x, dev_data_y, batch_size = nil)
+  def predict(dev_data_x, dev_data_y, batch_size)
     @array_of_z = []
     @array_of_a = []
 
@@ -109,9 +115,9 @@ class NN
         @array_of_a = []
         @array_of_z = []
 
-        create_layers(dev_data_x)
+        create_layers(dev_data_x, mini_batch_samples)
 
-        puts 'Prediction error: ' + apply_cost(@cost_function, dev_data_x.size, dev_data_y[mini_batch_samples]).to_s
+        puts 'Prediction error: ' + apply_cost(dev_data_y).to_s
 
         mini_batch_samples += 1
       end
@@ -125,7 +131,7 @@ class NN
   end
 
   def save_architecture(path)
-    serialized_array = Marshal.dump([@cost_function, @regularization_l2, @array_of_layers, @array_of_activations, @array_of_dropouts])
+    serialized_array = Marshal.dump([@cost_function, @regularization_l2, @array_of_layers, @array_of_activations, @array_of_dropouts, @array_of_batch_norms])
     File.open(path, 'wb') { |f| f.write(serialized_array) }
   end
 
@@ -145,10 +151,11 @@ class NN
     @array_of_layers = []
     @array_of_activations = tmp[3]
     @array_of_dropouts = tmp[4]
+    @array_of_batch_norms = tmp[5]
 
     i = 0
     while i < layers
-      add_nn(nodes[i].size, @array_of_activations[i], @array_of_dropouts[i])
+      add_nn(nodes[i].size, @array_of_activations[i], @array_of_dropouts[i], @array_of_batch_norms[i])
       i += 1
     end
   end
@@ -163,7 +170,7 @@ class NN
     @g.zero_vector(@array_of_layers[counter + 1])
   end
 
-  def create_layers(data_x)
+  def create_layers(data_x, mini_batch_samples)
     layer = 0
     while layer < @array_of_layers.size - 1
       @array_of_z[layer] = []
@@ -174,6 +181,11 @@ class NN
           @array_of_z[layer][samples] = @mm.add(@mm.dot(data_x[samples], @array_of_weights[layer]), @array_of_bias[layer])
         else
           @array_of_z[layer][samples] = @mm.add(@mm.dot(@array_of_a[layer - 1][samples], @array_of_weights[layer]), @array_of_bias[layer])
+        end
+        if !@array_of_batch_norms[layer].nil?
+          n = Normalization.new(true, @array_of_z[layer][samples])
+          tmp = n.z_norm(@array_of_z[layer][samples], n.mean, n.sigma)
+          @array_of_z[layer][samples] = @mm.add(@mm.mult(tmp, @array_of_batch_norms[layer][0]), @array_of_batch_norms[layer][1])
         end
         @array_of_a[layer][samples] = apply_activ(@array_of_z[layer][samples], @array_of_activations[layer])
         samples += 1
@@ -217,7 +229,7 @@ class NN
     end
   end
 
-  def back_propagation(data_x, data_y, momentum, optimizer, r)
+  def back_propagation(data_x, data_y)
     delta_a = Array.new(@array_of_layers.size) { |e| e = [] }
     layer = @array_of_layers.size - 1
     while layer > 0
@@ -225,9 +237,9 @@ class NN
       while samples < data_y.size
         if @cost_function == 'mse'
           delta_a[layer][samples] = @mm.subt(@array_of_a[layer - 1][samples], [data_y].transpose) if layer == @array_of_layers.size - 1
-          delta_z = @mm.mult(delta_a[layer][samples], apply_deriv(@array_of_z[layer - 1][samples], @array_of_activations[layer]))
-          delta_a[layer - 1][samples] = @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
         end
+        delta_z = @mm.mult(delta_a[layer][samples], apply_deriv(@array_of_z[layer - 1][samples], @array_of_activations[layer]))
+        delta_a[layer - 1][samples] = @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
         if !@regularization_l2.nil?
           if layer - 2 >= 0
             tmp = @mm.mult(@mm.dot(@array_of_a[layer - 2][samples].transpose, delta_z), (1.0 / @samples)) #/
@@ -237,10 +249,11 @@ class NN
           @array_of_delta_w[layer] = @mm.add(tmp, @mm.mult(@array_of_weights[layer - 1], (@regularization_l2 / @samples))) #/
         else
           if layer - 2 >= 0
-            @array_of_delta_w[layer] = @mm.mult(@mm.dot(@array_of_a[layer - 2][samples].transpose, delta_z), (1.0 / @samples)) #/
+            tmp = @mm.mult(@mm.dot(@array_of_a[layer - 2][samples].transpose, delta_z), (1.0 / @samples)) #/
           else
-            @array_of_delta_w[layer] = @mm.mult(data_x.transpose, delta_z, (1.0 / @samples)) #/
+            tmp = @mm.mult(@mm.dot(data_x.transpose, delta_z), (1.0 / @samples)) #/
           end
+          @array_of_delta_w[layer] = tmp
         end
         @array_of_delta_b[layer] = @mm.mult(@mm.horizontal_sum(delta_z), (1.0 / @samples)) #/
         samples += 1
@@ -249,47 +262,47 @@ class NN
     end
     layer = 1
     while layer < @array_of_delta_w.size
-      if optimizer == 'BGDwM'
+      if @optimizer == 'BGDwM'
         @array_of_v_delta_w[layer] = @g.zero_matrix(@array_of_delta_w[layer].size, @array_of_delta_w[layer][0].size)
         @array_of_v_delta_b[layer] = @g.zero_vector(@array_of_delta_b[layer].size)
 
-        tmp1 = @mm.mult(@array_of_v_delta_w[layer], momentum[0])
-        tmp2 = @mm.mult(@array_of_delta_w[layer], (1.0 - momentum[0]))
+        tmp1 = @mm.mult(@array_of_v_delta_w[layer], @momentum[0])
+        tmp2 = @mm.mult(@array_of_delta_w[layer], (1.0 - @momentum[0]))
         @array_of_v_delta_w[layer] = @mm.add(tmp1, tmp2)
-      elsif optimizer == 'RMSprop'
+      elsif @optimizer == 'RMSprop'
         @array_of_s_delta_w[layer] = @g.zero_matrix(@array_of_delta_w[layer].size, @array_of_delta_w[layer][0].size)
         @array_of_s_delta_b[layer] = @g.zero_vector(@array_of_delta_b[layer].size)
 
-        tmp1 = @mm.mult(@array_of_s_delta_w[layer], momentum[0])
-        tmp2 = @mm.mult(@mm.mult(@array_of_delta_w[layer], @array_of_delta_w[layer]), (1.0 - momentum[0]))
+        tmp1 = @mm.mult(@array_of_s_delta_w[layer], @momentum[0])
+        tmp2 = @mm.mult(@mm.mult(@array_of_delta_w[layer], @array_of_delta_w[layer]), (1.0 - @momentum[0]))
         @array_of_s_delta_w[layer] = @mm.add(tmp1, tmp2)
 
-        tmp1 = @mm.mult(@array_of_s_delta_b[layer], momentum[0])
-        tmp2 = @mm.mult(@mm.mult(@array_of_delta_b[layer], @array_of_delta_b[layer]), (1.0 - momentum[0]))
+        tmp1 = @mm.mult(@array_of_s_delta_b[layer], @momentum[0])
+        tmp2 = @mm.mult(@mm.mult(@array_of_delta_b[layer], @array_of_delta_b[layer]), (1.0 - @momentum[0]))
         @array_of_s_delta_b[layer] = @mm.add(tmp1, tmp2)
-      elsif optimizer == 'Adam'
+      elsif @optimizer == 'Adam'
         @array_of_v_delta_w[layer] = @g.zero_matrix(@array_of_delta_w[layer].size, @array_of_delta_w[layer][0].size)
         @array_of_v_delta_b[layer] = @g.zero_vector(@array_of_delta_b[layer].size)
         @array_of_s_delta_w[layer] = @g.zero_matrix(@array_of_delta_w[layer].size, @array_of_delta_w[layer][0].size)
         @array_of_s_delta_b[layer] = @g.zero_vector(@array_of_delta_b[layer].size)
 
-        tmp1 = @mm.mult(@array_of_v_delta_w[layer], momentum[0])
-        tmp2 = @mm.mult(@array_of_delta_w[layer], (1.0 - momentum[0]))
+        tmp1 = @mm.mult(@array_of_v_delta_w[layer], @momentum[0])
+        tmp2 = @mm.mult(@array_of_delta_w[layer], (1.0 - @momentum[0]))
         @array_of_v_delta_w[layer] = @mm.add(tmp1, tmp2)
 
-        tmp1 = @mm.mult(@array_of_v_delta_b[layer], momentum[0])
-        tmp2 = @mm.mult(@array_of_delta_b[layer], (1.0 - momentum[0]))
+        tmp1 = @mm.mult(@array_of_v_delta_b[layer], @momentum[0])
+        tmp2 = @mm.mult(@array_of_delta_b[layer], (1.0 - @momentum[0]))
         @array_of_v_delta_b[layer] = @mm.add(tmp1, tmp2)
 
-        tmp1 = @mm.mult(@array_of_s_delta_w[layer], momentum[1])
-        tmp2 = @mm.mult(@mm.mult(@array_of_delta_w[layer], @array_of_delta_w[layer]), (1.0 - momentum[1]))
+        tmp1 = @mm.mult(@array_of_s_delta_w[layer], @momentum[1])
+        tmp2 = @mm.mult(@mm.mult(@array_of_delta_w[layer], @array_of_delta_w[layer]), (1.0 - @momentum[1]))
         @array_of_s_delta_w[layer] = @mm.add(tmp1, tmp2)
 
-        tmp1 = @mm.mult(@array_of_s_delta_b[layer], momentum[1])
-        tmp2 = @mm.mult(@mm.mult(@array_of_delta_b[layer], @array_of_delta_b[layer]), (1.0 - momentum[1]))
+        tmp1 = @mm.mult(@array_of_s_delta_b[layer], @momentum[1])
+        tmp2 = @mm.mult(@mm.mult(@array_of_delta_b[layer], @array_of_delta_b[layer]), (1.0 - @momentum[1]))
         @array_of_s_delta_b[layer] = @mm.add(tmp1, tmp2)
 
-        tmp = (1.0 - (momentum[0]**r))
+        tmp = (1.0 - (@momentum[0]**r))
         if !tmp.zero?
           @array_of_v_delta_w[layer] = @mm.div(@array_of_v_delta_w[layer], tmp)
           @array_of_v_delta_b[layer] = @mm.div(@array_of_v_delta_b[layer], tmp)
@@ -301,57 +314,57 @@ class NN
     end
   end
 
-  def update_weights(alpha, momentum, optimizer)
-    if optimizer == 'BGD'
+  def update_weights
+    if @optimizer == 'BGD'
       layer = @array_of_layers.size - 1
       while layer > 0
         samples = 0
         while samples < @array_of_a[layer - 1].size
-          @array_of_weights[layer - 1] = @mm.subt(@array_of_weights[layer - 1], @mm.mult(@array_of_delta_w[layer], alpha))
-          @array_of_bias[layer - 1] = @mm.subt(@array_of_bias[layer - 1], @mm.mult(@array_of_delta_b[layer], alpha))
+          @array_of_weights[layer - 1] = @mm.subt(@array_of_weights[layer - 1], @mm.mult(@array_of_delta_w[layer], @learning_rate))
+          @array_of_bias[layer - 1] = @mm.subt(@array_of_bias[layer - 1], @mm.mult(@array_of_delta_b[layer], @learning_rate))
           samples += 1
         end
         layer -= 1
       end
-    elsif optimizer == 'BGDwM'
+    elsif @optimizer == 'BGDwM'
       layer = @array_of_layers.size - 1
       while layer > 0
         samples = 0
         while samples < @array_of_a[layer - 1].size
-          @array_of_weights[layer - 1] = @mm.subt(@array_of_weights[layer - 1], @mm.mult(@array_of_v_delta_w[layer], alpha))
-          @array_of_bias[layer - 1] = @mm.subt(@array_of_bias[layer - 1], @mm.mult(@array_of_v_delta_b[layer], alpha))
+          @array_of_weights[layer - 1] = @mm.subt(@array_of_weights[layer - 1], @mm.mult(@array_of_v_delta_w[layer], @learning_rate))
+          @array_of_bias[layer - 1] = @mm.subt(@array_of_bias[layer - 1], @mm.mult(@array_of_v_delta_b[layer], @learning_rate))
           samples += 1
         end
         layer -= 1
       end
-    elsif optimizer == 'RMSprop'
+    elsif @optimizer == 'RMSprop'
       layer = @array_of_layers.size - 1
       while layer > 0
         samples = 0
         while samples < @array_of_a[layer - 1].size
           tmp1 = @mm.matrix_sqrt(@array_of_s_delta_w[layer])
           tmp2 = @mm.div(@array_of_delta_w[layer], tmp1)
-          @array_of_weights[layer - 1] = @mm.subt(@array_of_weights[layer - 1], @mm.mult(tmp2, alpha))
+          @array_of_weights[layer - 1] = @mm.subt(@array_of_weights[layer - 1], @mm.mult(tmp2, @learning_rate))
 
           tmp1 = @mm.vector_sqrt(@array_of_s_delta_b[layer])
           tmp2 = @mm.div(@array_of_delta_b[layer], tmp1)
-          @array_of_bias[layer - 1] = @mm.subt(@array_of_bias[layer - 1], @mm.mult(tmp2, alpha))
+          @array_of_bias[layer - 1] = @mm.subt(@array_of_bias[layer - 1], @mm.mult(tmp2, @learning_rate))
           samples += 1
         end
         layer -= 1
       end
-    elsif optimizer == 'Adam'
+    elsif @optimizer == 'Adam'
       layer = @array_of_layers.size - 1
       while layer > 0
         samples = 0
         while samples < @array_of_a[layer - 1].size
           tmp1 = @mm.matrix_sqrt(@array_of_s_delta_w[layer])
-          tmp2 = @mm.add(@mm.div(@array_of_v_delta_w[layer], tmp1), momentum[2])
-          @array_of_weights[layer - 1] = @mm.subt(@array_of_weights[layer - 1], @mm.mult(tmp2, alpha))
+          tmp2 = @mm.add(@mm.div(@array_of_v_delta_w[layer], tmp1), @momentum[2])
+          @array_of_weights[layer - 1] = @mm.subt(@array_of_weights[layer - 1], @mm.mult(tmp2, @learning_rate))
 
           tmp1 = @mm.vector_sqrt(@array_of_s_delta_b[layer])
-          tmp2 = @mm.add(@mm.div(@array_of_v_delta_b[layer], tmp1), momentum[2])
-          @array_of_bias[layer - 1] = @mm.subt(@array_of_bias[layer - 1], @mm.mult(tmp2, alpha))
+          tmp2 = @mm.add(@mm.div(@array_of_v_delta_b[layer], tmp1), @momentum[2])
+          @array_of_bias[layer - 1] = @mm.subt(@array_of_bias[layer - 1], @mm.mult(tmp2, @learning_rate))
           samples += 1
         end
         layer -= 1
@@ -360,19 +373,15 @@ class NN
     end
   end
 
-  def apply_cost(cost_function, samples, data_y)
+  def apply_cost(data_y)
     if !@regularization_l2.nil?
       tmp2 = @mm.f_norm(@array_of_weights.last)
-      if cost_function == 'mse'
-        tmp1 = @c.quadratic_cost_with_r(@array_of_a.last.flatten, data_y, samples, @regularization_l2, tmp2)
-      elsif cost_function == 'cross_entropy'
-        tmp1 = @c.cross_entropy_cost_with_r(@array_of_a.last.flatten, data_y, samples, @regularization_l2, tmp2)
+      if @cost_function == 'mse'
+        tmp1 = @c.quadratic_cost_with_r(@array_of_a.last, data_y, @regularization_l2, tmp2)
       end
     else
-      if cost_function == 'mse'
-        tmp1 = @c.quadratic_cost(@array_of_a.last.flatten, data_y, samples)
-      elsif cost_function == 'cross_entropy'
-        tmp1 = @c.cross_entropy_cost(@array_of_a.last.flatten, data_y, samples)
+      if @cost_function == 'mse'
+        tmp1 = @c.quadratic_cost(@array_of_a.last, data_y)
       end
     end
     tmp1

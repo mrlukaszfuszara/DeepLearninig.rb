@@ -277,7 +277,20 @@ class MatrixMath
         puts 'Div Matrix / Matrix: Size error'
       end
     elsif one == 2 && two == 1
-      puts 'Div Error: Matrix / Vector'
+      if variable1[0].size == variable2.size
+        i = 0
+        while i < variable1.size
+          array[i] = []
+          j = 0
+          while j < variable1[0].size
+            array[i][j] = variable1[i][j] / variable2[j]
+            j += 1
+          end
+          i += 1
+        end
+      else
+        puts 'Div Matrix / Vector: Size error'
+      end
     elsif one == 2 && two.zero?
       i = 0
       while i < variable1.size
@@ -334,7 +347,6 @@ class MatrixMath
         puts 'Dot Matrix @ Matrix: Size error'
       end
     elsif one == 2 && two == 1
-      p variable1[0].size, variable2.size
       if  variable1[0].size == variable2.size
         i = 0
         while i <  variable1.size

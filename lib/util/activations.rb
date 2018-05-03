@@ -1,4 +1,8 @@
 class Activations
+  def initialize
+    @mm = MatrixMath.new
+  end
+
   def sigmoid(vector)
     array = []
     v = matrix_check(vector)
