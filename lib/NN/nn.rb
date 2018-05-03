@@ -1,5 +1,5 @@
 class NN
-  def initialize(data_x_vertical_size, data_x_horizontal_size = nil)
+  def initialize(data_x_vertical_size)
     @mm = MatrixMath.new
     @g = Generators.new
     @a = Activations.new
@@ -13,7 +13,6 @@ class NN
     @array_of_bias = []
 
     @features = data_x_vertical_size
-    @samples = data_x_horizontal_size
 
     add_nn(@features, 'nil')
   end
@@ -50,6 +49,8 @@ class NN
     train_data_x = smb.data_x
     train_data_y = smb.data_y
 
+    @samples = train_data_x.size
+
     counter = 0
     epochs.times do |t|
       @learning_rate = @learning_rate / (1.0 + @decay_rate * t)
@@ -74,7 +75,7 @@ class NN
         @array_of_z = []
 
         counter += 1
-        create_layers(train_data_x, mini_batch_samples)
+        create_layers(train_data_x)
 
         if mini_batch_samples.zero? || mini_batch_samples == 1 || clear
           puts 'Iter: ' + (counter * @iterations).to_s + ' of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
@@ -91,7 +92,7 @@ class NN
         @iterations.times do
           @array_of_delta_w = []
           @array_of_delta_b = []
-          back_propagation(train_data_x[mini_batch_samples], train_data_y[mini_batch_samples])
+          back_propagation(train_data_x[mini_batch_samples], train_data_y[mini_batch_samples], mini_batch_samples)
           update_weights
         end
 
@@ -115,7 +116,7 @@ class NN
         @array_of_a = []
         @array_of_z = []
 
-        create_layers(dev_data_x, mini_batch_samples)
+        create_layers(dev_data_x)
 
         puts 'Prediction error: ' + apply_cost(dev_data_y).to_s
 
@@ -170,7 +171,7 @@ class NN
     @g.zero_vector(@array_of_layers[counter + 1])
   end
 
-  def create_layers(data_x, mini_batch_samples)
+  def create_layers(data_x)
     layer = 0
     while layer < @array_of_layers.size - 1
       @array_of_z[layer] = []
@@ -181,11 +182,6 @@ class NN
           @array_of_z[layer][samples] = @mm.add(@mm.dot(data_x[samples], @array_of_weights[layer]), @array_of_bias[layer])
         else
           @array_of_z[layer][samples] = @mm.add(@mm.dot(@array_of_a[layer - 1][samples], @array_of_weights[layer]), @array_of_bias[layer])
-        end
-        if !@array_of_batch_norms[layer].nil?
-          n = Normalization.new(true, @array_of_z[layer][samples])
-          tmp = n.z_norm(@array_of_z[layer][samples], n.mean, n.sigma)
-          @array_of_z[layer][samples] = @mm.add(@mm.mult(tmp, @array_of_batch_norms[layer][0]), @array_of_batch_norms[layer][1])
         end
         @array_of_a[layer][samples] = apply_activ(@array_of_z[layer][samples], @array_of_activations[layer])
         samples += 1
@@ -229,7 +225,7 @@ class NN
     end
   end
 
-  def back_propagation(data_x, data_y)
+  def back_propagation(data_x, data_y, tim)
     delta_a = Array.new(@array_of_layers.size) { |e| e = [] }
     layer = @array_of_layers.size - 1
     while layer > 0
@@ -302,7 +298,7 @@ class NN
         tmp2 = @mm.mult(@mm.mult(@array_of_delta_b[layer], @array_of_delta_b[layer]), (1.0 - @momentum[1]))
         @array_of_s_delta_b[layer] = @mm.add(tmp1, tmp2)
 
-        tmp = (1.0 - (@momentum[0]**r))
+        tmp = (1.0 - (@momentum[0]**tim))
         if !tmp.zero?
           @array_of_v_delta_w[layer] = @mm.div(@array_of_v_delta_w[layer], tmp)
           @array_of_v_delta_b[layer] = @mm.div(@array_of_v_delta_b[layer], tmp)
@@ -369,7 +365,6 @@ class NN
         end
         layer -= 1
       end
-        
     end
   end
 
