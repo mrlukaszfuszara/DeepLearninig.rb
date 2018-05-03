@@ -56,7 +56,7 @@ class NN
         
         time << ((epochs * train_data_x.size) - (counter)) * (@start_time - @end_time) * 1_000_000 if mini_batch_samples > 0
 
-        clock = (time.inject(:+) / time.size / 60.0).floor if mini_batch_samples > 1
+        clock = (1.0 + time.inject(:+) / time.size / 60.0).floor if mini_batch_samples > 1
 
         clear = false
         if time.size % 20 == 0
@@ -96,8 +96,7 @@ class NN
     @array_of_a.last
   end
 
-  def predict(dev_data_x, dev_data_y, cost_function, regularization_l2 = nil, batch_size = nil)
-    @regularization_l2 = regularization_l2
+  def predict(dev_data_x, dev_data_y, batch_size = nil)
     @array_of_z = []
     @array_of_a = []
 
@@ -112,7 +111,7 @@ class NN
 
         create_layers(dev_data_x)
 
-        puts 'Prediction error: ' + apply_cost(cost_function, dev_data_x.size, dev_data_y[mini_batch_samples]).to_s
+        puts 'Prediction error: ' + apply_cost(@cost_function, dev_data_x.size, dev_data_y[mini_batch_samples]).to_s
 
         mini_batch_samples += 1
       end

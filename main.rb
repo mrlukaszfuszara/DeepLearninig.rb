@@ -24,11 +24,11 @@ class Main
     tmp
   end
 
-  def predict(data_x, data_y, cost_function, regularization_l2, batch_size)
+  def predict(data_x, data_y, batch_size)
     nn = NN.new(data_x[0].size)
     nn.load_architecture('./arch.msh')
     nn.load_weights('./weights.msh')
-    nn.predict(data_x, data_y, cost_function, regularization_l2, batch_size)
+    nn.predict(data_x, data_y, batch_size)
   end
 end
 
@@ -83,10 +83,10 @@ mean = n.mean
 n = Normalization.new
 dev_set_x = n.subt_mean(dev_set_x, mean)
 
-epochs = 4
-optimizer = 'Adam'
+epochs = 2
+optimizer = 'RMSprop'
 cost_function = 'mse'
-learning_rate = 0.00001
+learning_rate = 0.000001
 regularization_l2 = 0.1
 iterations = 30
 decay_rate = 1
@@ -95,9 +95,9 @@ test_x = [[6.3,0.48,0.04,1.1,0.046,30,99,0.9928,3.24,0.36,9.6]]
 test_y = [8]
 
 main = Main.new
-main.train(epochs, train_set_x, train_set_y, cost_function, optimizer, learning_rate, iterations, decay_rate, regularization_l2, batch_size,)
+#main.train(epochs, train_set_x, train_set_y, cost_function, optimizer, learning_rate, iterations, decay_rate, regularization_l2, batch_size,)
 
 #tmp = main.predict(test_x, test_y, cost_function, regularization_l2)
 #p tmp
 
-p main.predict(dev_set_x, dev_set_y, cost_function, regularization_l2, batch_size)
+p main.predict(dev_set_x, dev_set_y, batch_size)
