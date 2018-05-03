@@ -15,8 +15,8 @@ class Main
   def train(data_x, data_y, batch_size, epochs, cost_function, optimizer, learning_rate, decay_rate, iterations, regularization_l2)
     nn = NN.new(data_x[0].size)
     nn.add_nn(8, 'leaky_relu')
-    nn.add_nn(16, 'leaky_relu', 0.7)
-    nn.add_nn(8, 'leaky_relu')
+    nn.add_nn(16, 'leaky_relu', 0.5)
+    nn.add_nn(8, 'leaky_relu', 0.7)
     nn.add_nn(1, 'leaky_relu')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, regularization_l2)
     tmp = nn.fit(data_x, data_y, batch_size, epochs)
@@ -74,15 +74,15 @@ n = Normalization.new(true, train_set_x)
 train_set_x = n.normalize_x(train_set_x)
 dev_set_x = n.normalize_x(dev_set_x)
 
-epochs = 1
+epochs = 3
 optimizer = 'Adam'
 cost_function = 'mse'
-learning_rate = 0.000001
-regularization_l2 = 0.01
-iterations = 12
+learning_rate = 0.000005
+regularization_l2 = 1
+iterations = 30
 decay_rate = 1
 
 main = Main.new
 main.train(train_set_x, train_set_y, batch_size, epochs, cost_function, optimizer, learning_rate, decay_rate, iterations, regularization_l2)
 
-p main.predict(dev_set_x, dev_set_y, batch_size)
+t = main.predict(dev_set_x, dev_set_y, batch_size)

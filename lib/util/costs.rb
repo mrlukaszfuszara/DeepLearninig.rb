@@ -7,21 +7,21 @@ class Costs
     sum = 0
     i = 0
     while i < data_y.size
-      tmp = @mm.subt(data_y[i], data_y_hat[i].flatten)
-      sum += @mm.mult(tmp, tmp).inject(:+)
+      tmp = data_y[i] - data_y_hat[i][0]
+      sum += tmp**2
       i += 1
     end
-    sum / data_y_hat.size
+    sum / data_y_hat[0].size
   end
 
   def quadratic_cost_with_r(data_y_hat, data_y, lambd, norm)
     sum = 0
-    i = 0
-    while i < data_y.size
-      tmp = @mm.subt(data_y[i], data_y_hat[i].flatten)
-      sum += @mm.add(@mm.mult(tmp, tmp), (lambd / (2.0 * data_y.size)) * norm).inject(:+)
-      i += 1
+    j = 0
+    while j < data_y[0].size
+      tmp = data_y[0][j] - data_y_hat[0][j][0]
+      sum += tmp**2 + (lambd / (2.0 * data_y.size) * norm)
+      j += 1
     end
-    sum / data_y_hat.size
+    sum / data_y_hat[0].size
   end
 end

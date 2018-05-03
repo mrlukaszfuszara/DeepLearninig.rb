@@ -111,19 +111,12 @@ class NN
     dev_data_x = smb.data_x
     dev_data_y = smb.data_y
 
-    mini_batch_samples = 0
-      while mini_batch_samples < dev_data_x.size
-        @array_of_a = []
-        @array_of_z = []
+    @array_of_a = []
+    @array_of_z = []
 
-        create_layers(dev_data_x)
+    create_layers(dev_data_x)
 
-        puts 'Prediction error: ' + apply_cost(dev_data_y).to_s
-
-        mini_batch_samples += 1
-      end
-
-    @array_of_a.last
+    puts 'Prediction error: ' + apply_cost(dev_data_y).to_s
   end
 
   def save_weights(path)
@@ -229,30 +222,30 @@ class NN
     delta_a = Array.new(@array_of_layers.size) { |e| e = [] }
     layer = @array_of_layers.size - 1
     while layer > 0
-      samples = 0
-      while samples < data_y.size
+      features = 0
+      while features < @features
         if @cost_function == 'mse'
-          delta_a[layer][samples] = @mm.subt(@array_of_a[layer - 1][samples], [data_y].transpose) if layer == @array_of_layers.size - 1
+          delta_a[layer][features] = @mm.subt(@array_of_a[layer - 1][features], [data_y].transpose) if layer == @array_of_layers.size - 1
         end
-        delta_z = @mm.mult(delta_a[layer][samples], apply_deriv(@array_of_z[layer - 1][samples], @array_of_activations[layer]))
-        delta_a[layer - 1][samples] = @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
+        delta_z = @mm.mult(delta_a[layer][features], apply_deriv(@array_of_z[layer - 1][features], @array_of_activations[layer]))
+        delta_a[layer - 1][features] = @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
         if !@regularization_l2.nil?
           if layer - 2 >= 0
-            tmp = @mm.mult(@mm.dot(@array_of_a[layer - 2][samples].transpose, delta_z), (1.0 / @samples)) #/
+            tmp = @mm.mult(@mm.dot(@array_of_a[layer - 2][features].transpose, delta_z), (1.0 / data_x[0].size))
           else
-            tmp = @mm.mult(@mm.dot(data_x.transpose, delta_z), (1.0 / @samples)) #/
+            tmp = @mm.mult(@mm.dot(data_x.transpose, delta_z), (1.0 / data_x[0].size))
           end
-          @array_of_delta_w[layer] = @mm.add(tmp, @mm.mult(@array_of_weights[layer - 1], (@regularization_l2 / @samples))) #/
+          @array_of_delta_w[layer] = @mm.add(tmp, @mm.mult(@array_of_weights[layer - 1], (@regularization_l2 / data_x[0].size)))
         else
           if layer - 2 >= 0
-            tmp = @mm.mult(@mm.dot(@array_of_a[layer - 2][samples].transpose, delta_z), (1.0 / @samples)) #/
+            tmp = @mm.mult(@mm.dot(@array_of_a[layer - 2][features].transpose, delta_z), (1.0 / data_x[0].size))
           else
-            tmp = @mm.mult(@mm.dot(data_x.transpose, delta_z), (1.0 / @samples)) #/
+            tmp = @mm.mult(@mm.dot(data_x.transpose, delta_z), (1.0 / data_x[0].size))
           end
           @array_of_delta_w[layer] = tmp
         end
-        @array_of_delta_b[layer] = @mm.mult(@mm.horizontal_sum(delta_z), (1.0 / @samples)) #/
-        samples += 1
+        @array_of_delta_b[layer] = @mm.mult(@mm.horizontal_sum(delta_z), (1.0 / data_x[0].size))
+        features += 1
       end
       layer -= 1
     end
@@ -314,30 +307,30 @@ class NN
     if @optimizer == 'BGD'
       layer = @array_of_layers.size - 1
       while layer > 0
-        samples = 0
-        while samples < @array_of_a[layer - 1].size
+        features = 0
+        while features < @features
           @array_of_weights[layer - 1] = @mm.subt(@array_of_weights[layer - 1], @mm.mult(@array_of_delta_w[layer], @learning_rate))
           @array_of_bias[layer - 1] = @mm.subt(@array_of_bias[layer - 1], @mm.mult(@array_of_delta_b[layer], @learning_rate))
-          samples += 1
+          features += 1
         end
         layer -= 1
       end
     elsif @optimizer == 'BGDwM'
       layer = @array_of_layers.size - 1
       while layer > 0
-        samples = 0
-        while samples < @array_of_a[layer - 1].size
+        features = 0
+        while features < @features
           @array_of_weights[layer - 1] = @mm.subt(@array_of_weights[layer - 1], @mm.mult(@array_of_v_delta_w[layer], @learning_rate))
           @array_of_bias[layer - 1] = @mm.subt(@array_of_bias[layer - 1], @mm.mult(@array_of_v_delta_b[layer], @learning_rate))
-          samples += 1
+          features += 1
         end
         layer -= 1
       end
     elsif @optimizer == 'RMSprop'
       layer = @array_of_layers.size - 1
       while layer > 0
-        samples = 0
-        while samples < @array_of_a[layer - 1].size
+        features = 0
+        while features < @features
           tmp1 = @mm.matrix_sqrt(@array_of_s_delta_w[layer])
           tmp2 = @mm.div(@array_of_delta_w[layer], tmp1)
           @array_of_weights[layer - 1] = @mm.subt(@array_of_weights[layer - 1], @mm.mult(tmp2, @learning_rate))
@@ -345,15 +338,15 @@ class NN
           tmp1 = @mm.vector_sqrt(@array_of_s_delta_b[layer])
           tmp2 = @mm.div(@array_of_delta_b[layer], tmp1)
           @array_of_bias[layer - 1] = @mm.subt(@array_of_bias[layer - 1], @mm.mult(tmp2, @learning_rate))
-          samples += 1
+          features += 1
         end
         layer -= 1
       end
     elsif @optimizer == 'Adam'
       layer = @array_of_layers.size - 1
       while layer > 0
-        samples = 0
-        while samples < @array_of_a[layer - 1].size
+        features = 0
+        while features < @features
           tmp1 = @mm.matrix_sqrt(@array_of_s_delta_w[layer])
           tmp2 = @mm.add(@mm.div(@array_of_v_delta_w[layer], tmp1), @momentum[2])
           @array_of_weights[layer - 1] = @mm.subt(@array_of_weights[layer - 1], @mm.mult(tmp2, @learning_rate))
@@ -361,7 +354,7 @@ class NN
           tmp1 = @mm.vector_sqrt(@array_of_s_delta_b[layer])
           tmp2 = @mm.add(@mm.div(@array_of_v_delta_b[layer], tmp1), @momentum[2])
           @array_of_bias[layer - 1] = @mm.subt(@array_of_bias[layer - 1], @mm.mult(tmp2, @learning_rate))
-          samples += 1
+          features += 1
         end
         layer -= 1
       end
