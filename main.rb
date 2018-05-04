@@ -76,13 +76,13 @@ test_set_y = test_set[1]
 #dev_set_x = n.normalize_x(dev_set_x)
 
 epochs = 3
-optimizer = 'BGD'
+optimizer = 'Adam'
 cost_function = 'mse'
-learning_rate = 0.000001
-regularization_l2 = nil
+learning_rate = 0.001
+regularization_l2 = 0.1
 iterations = 20
 decay_rate = 1
-momentum = [0.9]
+momentum = [0.9, 0.999, 10**-8]
 
 main = Main.new
 main.train(train_set_x, train_set_y, batch_size, epochs, cost_function, optimizer, learning_rate, decay_rate, iterations, regularization_l2, momentum)
