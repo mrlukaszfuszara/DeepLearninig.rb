@@ -32,6 +32,7 @@ class NN
     @iterations = iterations
     @regularization_l2 = regularization_l2
     @momentum = momentum
+
     i = 0
     while i < @array_of_layers.size - 1
       @array_of_bias << create_bias(i)
@@ -117,6 +118,8 @@ class NN
     create_layers(dev_data_x)
 
     puts 'Prediction error: ' + apply_cost(dev_data_y).to_s
+
+    @array_of_a.last
   end
 
   def save_weights(path)
@@ -176,7 +179,7 @@ class NN
         else
           @array_of_z[layer][samples] = @mm.add(@mm.dot(@array_of_a[layer - 1][samples], @array_of_weights[layer]), @array_of_bias[layer])
         end
-        @array_of_a[layer][samples] = apply_activ(@array_of_z[layer][samples], @array_of_activations[layer])
+        @array_of_a[layer][samples] = apply_activ(@array_of_z[layer][samples], @array_of_activations[layer + 1])
         samples += 1
       end
       layer += 1
@@ -226,8 +229,15 @@ class NN
       while features < @features
         if @cost_function == 'mse'
           delta_a[layer][features] = @mm.subt(@array_of_a[layer - 1][features], [data_y].transpose) if layer == @array_of_layers.size - 1
+          delta_z = @mm.mult(delta_a[layer][features], apply_deriv(@array_of_z[layer - 1][features], nil, @array_of_activations[layer]))
+        elsif @cost_function == 'log_loss'
+          if layer != @array_of_layers.size - 1
+            delta_a[layer][features] = @mm.subt(@array_of_a[layer - 1][features], data_y) if layer == @array_of_layers.size - 1
+            delta_z = @mm.mult(delta_a[layer][features], apply_deriv(@array_of_z[layer - 1][features], data_y, @array_of_activations[layer]))
+          else
+            delta_z = apply_deriv(@array_of_z[layer - 1][features], data_y, @array_of_activations[layer])
+          end
         end
-        delta_z = @mm.mult(delta_a[layer][features], apply_deriv(@array_of_z[layer - 1][features], @array_of_activations[layer]))
         delta_a[layer - 1][features] = @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
         if !@regularization_l2.nil?
           if layer - 2 >= 0
@@ -362,16 +372,20 @@ class NN
   end
 
   def apply_cost(data_y)
-    if !@regularization_l2.nil?
       tmp2 = @mm.f_norm(@array_of_weights.last)
       if @cost_function == 'mse'
-        tmp1 = @c.quadratic_cost_with_r(@array_of_a.last, data_y, @regularization_l2, tmp2)
+        if !@regularization_l2.nil?
+          tmp1 = @c.quadratic_cost_with_r(@array_of_a.last, data_y, @regularization_l2, tmp2)
+        else
+          tmp1 = @c.quadratic_cost(@array_of_a.last, data_y)
+        end
+      elsif @cost_function == 'log_loss'
+        if !@regularization_l2.nil?
+          tmp1 = @c.log_loss_cost_with_r(@array_of_a.last, data_y, @regularization_l2, tmp2)
+        else
+          tmp1 = @c.log_loss_cost(@array_of_a.last, data_y)
+        end
       end
-    else
-      if @cost_function == 'mse'
-        tmp1 = @c.quadratic_cost(@array_of_a.last, data_y)
-      end
-    end
     tmp1
   end
 
@@ -386,11 +400,12 @@ class NN
       tmp = @a.tanh(layer)
     elsif activation == 'sigmoid'
       tmp = @a.sigmoid(layer)
+    elsif activation == 'softmax'
+      tmp = @a.softmax(layer)
     end
-    tmp
   end
 
-  def apply_deriv(layer, activation)
+  def apply_deriv(layer, hat, activation)
     if activation == 'relu'
       tmp = @a.relu_d(layer)
     elsif activation == 'leaky_relu'
@@ -399,6 +414,8 @@ class NN
       tmp = @a.tanh_d(layer)
     elsif activation == 'sigmoid'
       tmp = @a.sigmoid_d(layer)
+    elsif activation == 'softmax'
+      tmp = @a.softmax_d(layer, hat)
     end
     tmp
   end

@@ -79,4 +79,26 @@ class Generators
     end
     array
   end
+
+  def one_hot_vector(data_y)
+    min_val = data_y.min
+    max_val = data_y.max
+    max_subt_min = max_val - min_val
+    array = []
+    i = 0
+    while i < data_y.size
+      array[i] = []
+      j = 0
+      while j < max_subt_min
+        if data_y[i] == j + min_val
+          array[i][j] = 1.0
+        else
+          array[i][j] = 0.0
+        end
+        j += 1
+      end
+      i += 1
+    end
+    array
+  end
 end
