@@ -24,7 +24,7 @@ class NN
     @array_of_batch_norms << batch_norm
   end
 
-  def compile(optimizer, cost_function, learning_rate = 0.000001, decay_rate = 1, iterations = 10, regularization_l2 = 0.1, momentum = [0.9, 0.999, 10**-8])
+  def compile(optimizer, cost_function, learning_rate, decay_rate = 1, iterations = 10, regularization_l2 = 0.1, momentum = [0.9, 0.999, 10**-8])
     @cost_function = cost_function
     @optimizer = optimizer
     @learning_rate = learning_rate
@@ -164,7 +164,7 @@ class NN
   private
 
   def create_weights(counter)
-    @mm.mult(@g.random_matrix(@array_of_layers[counter], @array_of_layers[counter + 1], 0.0..0.01), Math.sqrt(2.0 / @features)) #/
+    @mm.mult(@g.random_matrix(@array_of_layers[counter], @array_of_layers[counter + 1], 0.001..0.01), Math.sqrt(2.0 / @features)) #/
   end
 
   def create_bias(counter)
@@ -214,7 +214,7 @@ class NN
           array_of_dropouts_final[mini_batch_samples] = []
           nodes = 0
           while nodes < @array_of_a[layer][0][0].size
-            if array_of_random_values[mini_batch_samples][nodes] < @array_of_dropouts[layer]
+            if array_of_random_values[mini_batch_samples][nodes] <= @array_of_dropouts[layer]
               array_of_dropouts_final[mini_batch_samples][nodes] = 1.0
             else
               array_of_dropouts_final[mini_batch_samples][nodes] = 0.0
@@ -239,27 +239,28 @@ class NN
         if @cost_function == 'mse'
           delta_a << @mm.subt(@array_of_a[layer - 1][features], [data_y].transpose) if layer == @array_of_layers.size - 1
           delta_z = @mm.mult(delta_a.pop, apply_deriv(@array_of_z[layer - 1][features], nil, @array_of_activations[layer]))
+          delta_a.unshift @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
         elsif @cost_function == 'log_loss'
-          delta_a << @array_of_a[layer - 1][features] if layer == @array_of_layers.size - 1
-          delta_z = @mm.mult(delta_a.pop, apply_deriv(@array_of_z[layer - 1][features], data_y, @array_of_activations[layer]))
+          delta_a << apply_deriv(@array_of_z[layer - 1][features], data_y, 'softmax') if layer == @array_of_layers.size - 1
+          delta_z = @mm.mult(delta_a.pop, apply_deriv(@array_of_z[layer - 1][features], data_y, 'softmax'))
+          delta_a.unshift @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
         end
-        delta_a.unshift @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
         if !@regularization_l2.nil?
           if layer - 2 >= 0
-            tmp = @mm.mult(@mm.dot(@array_of_a[layer - 2][features].transpose, delta_z), (1.0 / data_x[0].size))
+            tmp = @mm.mult(@mm.dot(@array_of_a[layer - 2][features].transpose, delta_z), (1.0 / data_x.size))
           else
-            tmp = @mm.mult(@mm.dot(data_x.transpose, delta_z), (1.0 / data_x[0].size))
+            tmp = @mm.mult(@mm.dot(data_x.transpose, delta_z), (1.0 / data_x.size))
           end
-          @array_of_delta_w[layer] = @mm.add(tmp, @mm.mult(@array_of_weights[layer - 1], (@regularization_l2 / data_x[0].size)))
+          @array_of_delta_w[layer] = @mm.add(tmp, @mm.mult(@array_of_weights[layer - 1], (@regularization_l2 / data_x.size)))
         else
           if layer - 2 >= 0
-            tmp = @mm.mult(@mm.dot(@array_of_a[layer - 2][features].transpose, delta_z), (1.0 / data_x[0].size))
+            tmp = @mm.mult(@mm.dot(@array_of_a[layer - 2][features].transpose, delta_z), (1.0 / data_x.size))
           else
-            tmp = @mm.mult(@mm.dot(data_x.transpose, delta_z), (1.0 / data_x[0].size))
+            tmp = @mm.mult(@mm.dot(data_x.transpose, delta_z), (1.0 / data_x.size))
           end
           @array_of_delta_w[layer] = tmp
         end
-        @array_of_delta_b[layer] = @mm.mult(@mm.horizontal_sum(delta_z), (1.0 / data_x[0].size))
+        @array_of_delta_b[layer] = @mm.mult(@mm.horizontal_sum(delta_z), (1.0 / data_x.size))
 
         features += 1
       end

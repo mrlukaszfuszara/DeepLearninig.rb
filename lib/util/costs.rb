@@ -9,10 +9,10 @@ class Costs
     while i < data_y[0].size
       tmp = @mm.subt(data_y[i], data_y_hat.flatten)
       tmp = @mm.mult(tmp, tmp)
-      tmp = @mm.div(tmp, data_y[0].size)
+      tmp = 0.5 * tmp.inject(:+)
       i += 1
     end
-    tmp.inject(:+) / data_y[0].size
+    tmp
   end
 
   def quadratic_cost_with_r(data_y_hat, data_y, lambd, norm)
@@ -21,10 +21,10 @@ class Costs
     while i < data_y[0].size
       tmp = @mm.subt(data_y[i], data_y_hat.flatten)
       tmp = @mm.mult(tmp, tmp)
-      tmp = @mm.div(tmp, data_y[0].size)
+      tmp = 0.5 * tmp.inject(:+) + (lambd / (2.0 * data_y.size) * norm)
       i += 1
     end
-    tmp.inject(:+) / data_y[0].size + data_y.size + (lambd / (2.0 * data_y.size) * norm)
+    tmp
   end
 
   def log_loss_cost(data_y_hat, data_y)
@@ -32,10 +32,10 @@ class Costs
     i = 0
     while i < data_y[0].size
       tmp = @mm.mult(@mm.mult(data_y[i], @mm.vector_ln(data_y_hat[i])), -1.0)
-      tmp = @mm.div(tmp, data_y[0].size)
+      tmp = tmp.inject(:+)
       i += 1
     end
-    @mm.vertical_sum(tmp).inject(:+) / data_y.size
+    tmp.inject(:+) / data_y[0].size
   end
 
   def log_loss_cost_with_r(data_y_hat, data_y, lambd, norm)
@@ -43,10 +43,10 @@ class Costs
     i = 0
     while i < data_y[0].size
       tmp = @mm.mult(@mm.mult(data_y[i], @mm.vector_ln(data_y_hat[i])), -1.0)
-      tmp = @mm.div(tmp, data_y[0].size)
+      tmp = tmp.inject(:+) + (lambd / (2.0 * data_y.size) * norm)
       i += 1
     end
-    @mm.vertical_sum(tmp).inject(:+) + data_y.size + (lambd / (2.0 * data_y.size) * norm)
+    tmp.inject(:+) / data_y[0].size
   end
 
   private

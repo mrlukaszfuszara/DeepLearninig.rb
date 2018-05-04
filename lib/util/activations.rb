@@ -7,10 +7,10 @@ class Activations
     v = matrix_check(vector)
     if v == 2
       tmp = @mm.matrix_exp(vector)
-      tmp = @mm.div(tmp, vector.size)
+      tmp = @mm.div(tmp, vector[0].size)
     elsif v == 1
       tmp = @mm.vector_exp(vector)
-      tmp = @mm.div(tmp, vector.size)
+      tmp = @mm.div(tmp, vector[0].size)
     end
     tmp
   end

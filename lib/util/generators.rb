@@ -93,7 +93,7 @@ class Generators
         if data_y[i] == j + min_val
           array[i][j] = 1.0
         else
-          array[i][j] = 0.0
+          array[i][j] = 10**-8
         end
         j += 1
       end

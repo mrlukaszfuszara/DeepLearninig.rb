@@ -12,11 +12,11 @@ require './lib/util/costs'
 require './lib/nn/nn'
 
 class Main
-  def train(data_x, data_y, batch_size, epochs, cost_function, optimizer, learning_rate, decay_rate, iterations, regularization_l2)
+  def train(data_x, data_y, batch_size, epochs, cost_function, optimizer, learning_rate, decay_rate, iterations, regularization_l2, momentum)
     nn = NN.new(data_x[0].size)
     nn.add_nn(6, 'leaky_relu')
     nn.add_nn(1, 'leaky_relu')
-    nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, regularization_l2)
+    nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, regularization_l2, momentum)
     tmp = nn.fit(data_x, data_y, batch_size, epochs)
     nn.save_weights('./weights.msh')
     nn.save_architecture('./arch.msh')
@@ -76,15 +76,16 @@ test_set_y = test_set[1]
 #dev_set_x = n.normalize_x(dev_set_x)
 
 epochs = 3
-optimizer = 'BGDwM'
+optimizer = 'BGD'
 cost_function = 'mse'
-learning_rate = 0.00001
+learning_rate = 0.000001
 regularization_l2 = nil
-iterations = 10
+iterations = 20
 decay_rate = 1
+momentum = [0.9]
 
 main = Main.new
-#main.train(train_set_x, train_set_y, batch_size, epochs, cost_function, optimizer, learning_rate, decay_rate, iterations, regularization_l2)
+main.train(train_set_x, train_set_y, batch_size, epochs, cost_function, optimizer, learning_rate, decay_rate, iterations, regularization_l2, momentum)
 
 t = main.predict(dev_set_x, dev_set_y, batch_size)
 p t
