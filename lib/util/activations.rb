@@ -4,57 +4,28 @@ class Activations
   end
 
   def softmax(vector)
-    array1 = []
-    array2 = []
     v = matrix_check(vector)
     if v == 2
-      i = 0
-      while i < vector.size
-        array1[i] = []
-        j = 0
-        while j < vector[i].size
-          array1[i][j] = Math.exp vector[i][j]
-          j += 1
-        end
-        array2[i] = array1[i].inject(:+)
-        i += 1
-      end
-      i = 0
-      while i < vector.size
-        j = 0
-        while j < vector[i].size
-          array1[i][j] = array1[i][j] / array2[i]
-          j += 1
-        end
-        i += 1
-      end
+      tmp = @mm.matrix_exp(vector)
+      tmp = @mm.div(tmp, vector.size)
     elsif v == 1
-      i = 0
-      while i < vector.size
-        array1[i] = Math.exp  vector[i]
-        i += 1
-      end
-      array2 = array1.inject(:+)
-      i = 0
-      while i < vector.size
-        array1[i] = array1[i] / array2
-        i += 1
-      end
+      tmp = @mm.vector_exp(vector)
+      tmp = @mm.div(tmp, vector.size)
     end
-    array1
+    tmp
   end
 
-  def softmax_d(vector_y, vector_y_hat)
+  def softmax_d(vector_y_hat, vector_y)
     array = []
     v = matrix_check(vector_y)
     if v == 2
       i = 0
       while i < vector_y.size
-        array[i] = @mm.mult(@mm.subt(vector_y_hat[i], vector_y[i]), -1.0)
+        array[i] = @mm.subt(vector_y_hat[i], vector_y[i])
         i += 1
       end
     elsif v == 1
-      array = @mm.mult(@mm.subt(vector_y_hat, vector_y), -1.0)
+      array = @mm.subt(vector_y_hat, vector_y)
     end
     array
   end
@@ -184,6 +155,7 @@ class Activations
         i += 1
       end
     end
+    array
   end
 
   def relu_d(vector)
@@ -227,7 +199,7 @@ class Activations
         array[i] = []
         j = 0
         while j < vector[i].size
-          tmp = 0.01 * vector[i][j]
+        tmp = 0.01 * vector[i][j]
           if vector[i][j] > tmp
             array[i][j] = vector[i][j]
           else

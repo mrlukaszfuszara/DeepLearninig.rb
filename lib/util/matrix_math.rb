@@ -62,6 +62,56 @@ class MatrixMath
     array
   end
 
+  def matrix_ln(matrix)
+    array = []
+    i = 0
+    while i < matrix.size
+      array[i] = [0]
+      j = 0
+      while j < matrix[i].size
+        array[i][j] = Math.log(matrix[i][j])
+        j += 1
+      end
+      i += 1
+    end
+    array
+  end
+
+  def matrix_exp(matrix)
+    array = []
+    i = 0
+    while i < matrix.size
+      array[i] = [0]
+      j = 0
+      while j < matrix[i].size
+        array[i][j] = Math.exp(matrix[i][j])
+        j += 1
+      end
+      i += 1
+    end
+    array
+  end
+
+  def vector_ln(vector)
+    array = []
+    i = 0
+    while i < vector.size
+      array[i] = Math.log(vector[i])
+      i += 1
+    end
+    array
+  end
+
+  def vector_exp(vector)
+    array = []
+    i = 0
+    while i < vector.size
+      array[i] = Math.exp(vector[i])
+      i += 1
+    end
+    array
+  end
+
   def add(variable1, variable2)
     one = matrix_check(variable1)
     two = matrix_check(variable2)

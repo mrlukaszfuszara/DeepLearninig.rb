@@ -4,56 +4,64 @@ class Costs
   end
 
   def quadratic_cost(data_y_hat, data_y)
-    sum = 0
+    array = []
     i = 0
-    while i < data_y.size
-      tmp = data_y[i] - data_y_hat[i][0]
-      sum += tmp**2
+    while i < data_y[0].size
+      tmp = @mm.subt(data_y[i], data_y_hat.flatten)
+      tmp = @mm.mult(tmp, tmp)
+      tmp = @mm.div(tmp, data_y[0].size)
       i += 1
     end
-    sum / data_y_hat[0].size
+    tmp.inject(:+) / data_y[0].size
   end
 
   def quadratic_cost_with_r(data_y_hat, data_y, lambd, norm)
-    sum = 0
-    j = 0
-    while j < data_y[0].size
-      tmp = data_y[0][j] - data_y_hat[0][j][0]
-      sum += tmp**2 + (lambd / (2.0 * data_y.size) * norm)
-      j += 1
+    array = []
+    i = 0
+    while i < data_y[0].size
+      tmp = @mm.subt(data_y[i], data_y_hat.flatten)
+      tmp = @mm.mult(tmp, tmp)
+      tmp = @mm.div(tmp, data_y[0].size)
+      i += 1
     end
-    sum / data_y_hat[0].size
+    tmp.inject(:+) / data_y[0].size + data_y.size + (lambd / (2.0 * data_y.size) * norm)
   end
 
   def log_loss_cost(data_y_hat, data_y)
-    sum = 0
+    array = []
     i = 0
     while i < data_y[0].size
-      tmp = 0
-      j = 0
-      while j < data_y[0][0].size
-        tmp += data_y[0][i][j] * Math.log(data_y_hat[0][i][j])
-        j += 1
-      end
-      sum += -1.0 * tmp
+      tmp = @mm.mult(@mm.mult(data_y[i], @mm.vector_ln(data_y_hat[i])), -1.0)
+      tmp = @mm.div(tmp, data_y[0].size)
       i += 1
     end
-    sum / data_y_hat[0].size
+    @mm.vertical_sum(tmp).inject(:+) / data_y.size
   end
 
   def log_loss_cost_with_r(data_y_hat, data_y, lambd, norm)
-    sum = 0
+    array = []
     i = 0
     while i < data_y[0].size
-      tmp = 0
-      j = 0
-      while j < data_y[0][0].size
-        tmp += data_y[0][i][j] * Math.log(data_y_hat[0][i][j])
-        j += 1
-      end
-      sum += -1.0 * tmp + (lambd / (2.0 * data_y.size) * norm)
+      tmp = @mm.mult(@mm.mult(data_y[i], @mm.vector_ln(data_y_hat[i])), -1.0)
+      tmp = @mm.div(tmp, data_y[0].size)
       i += 1
     end
-    sum / data_y_hat[0].size
+    @mm.vertical_sum(tmp).inject(:+) + data_y.size + (lambd / (2.0 * data_y.size) * norm)
+  end
+
+  private
+
+  def matrix_check(variable)
+    logic = nil
+    if variable.class == Array
+      if variable.all? { |e| e.class == Array }
+        logic = 2
+      else
+        logic = 1
+      end
+    else
+      logic = 0
+    end
+    logic
   end
 end

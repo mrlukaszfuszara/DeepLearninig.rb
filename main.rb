@@ -14,9 +14,8 @@ require './lib/nn/nn'
 class Main
   def train(data_x, data_y, batch_size, epochs, cost_function, optimizer, learning_rate, decay_rate, iterations, regularization_l2)
     nn = NN.new(data_x[0].size)
-    nn.add_nn(8, 'leaky_relu')
-    nn.add_nn(8, 'leaky_relu', 0.7)
-    nn.add_nn(6, 'softmax')
+    nn.add_nn(6, 'leaky_relu')
+    nn.add_nn(1, 'leaky_relu')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, regularization_l2)
     tmp = nn.fit(data_x, data_y, batch_size, epochs)
     nn.save_weights('./weights.msh')
@@ -54,8 +53,8 @@ while i < tmp.size
   i += 1
 end
 
-gen = Generators.new
-data_y = gen.one_hot_vector(data_y)
+#gen = Generators.new
+#data_y = gen.one_hot_vector(data_y)
 
 stdt = SpliterTDT.new(data_x, data_y)
 train_set = stdt.train
@@ -72,22 +71,20 @@ dev_set_y = dev_set[1]
 test_set_x = test_set[0]
 test_set_y = test_set[1]
 
-n = Normalization.new(true, train_set_x)
-train_set_x = n.normalize_x(train_set_x)
-dev_set_x = n.normalize_x(dev_set_x)
+#n = Normalization.new(true, train_set_x)
+#train_set_x = n.normalize_x(train_set_x)
+#dev_set_x = n.normalize_x(dev_set_x)
 
 epochs = 3
 optimizer = 'BGDwM'
-cost_function = 'log_loss'
+cost_function = 'mse'
 learning_rate = 0.00001
-regularization_l2 = 0.01
-iterations = 30
+regularization_l2 = nil
+iterations = 10
 decay_rate = 1
 
 main = Main.new
-main.train(train_set_x, train_set_y, batch_size, epochs, cost_function, optimizer, learning_rate, decay_rate, iterations, regularization_l2)
+#main.train(train_set_x, train_set_y, batch_size, epochs, cost_function, optimizer, learning_rate, decay_rate, iterations, regularization_l2)
 
 t = main.predict(dev_set_x, dev_set_y, batch_size)
-
-p train_set_y.first
-p t.first.first
+p t

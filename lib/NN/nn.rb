@@ -72,18 +72,17 @@ class NN
           clear = true
         end
 
-        @array_of_a = []
-        @array_of_z = []
-
         counter += 1
         create_layers(train_data_x)
 
-        if mini_batch_samples.zero? || mini_batch_samples == 1 || clear
+        last_layer = @array_of_a.last[mini_batch_samples]
+
+        if clear
           puts 'Iter: ' + (counter * @iterations).to_s + ' of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
-            apply_cost(train_data_y).to_s + ', ends: ' + '~' + ' minutes'
+            apply_cost(last_layer, train_data_y).to_s + ', ends: ' + '~' + ' minutes'
         else
           puts 'Iter: ' + (counter * @iterations).to_s + ' of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
-            apply_cost(train_data_y).to_s + ', ends: ' + clock.to_s + ' minutes'
+            apply_cost(last_layer, train_data_y).to_s + ', ends: ' + clock.to_s + ' minutes'
         end
 
         apply_dropout
@@ -105,20 +104,25 @@ class NN
   end
 
   def predict(dev_data_x, dev_data_y, batch_size)
-    @array_of_z = []
-    @array_of_a = []
-
     smb = SplitterMB.new(batch_size, dev_data_x, dev_data_y)
     dev_data_x = smb.data_x
     dev_data_y = smb.data_y
 
-    @array_of_a = []
-    @array_of_z = []
+    @samples = dev_data_x.size
 
-    create_layers(dev_data_x)
+    mini_batch_samples = 0
+    while mini_batch_samples < dev_data_x.size
+      @array_of_a = []
+      @array_of_z = []
 
-    puts 'Prediction error: ' + apply_cost(dev_data_y).to_s
+      create_layers(dev_data_x)
 
+      last_layer = @array_of_a.last[mini_batch_samples]
+
+      puts 'Prediction error: ' + apply_cost(last_layer, dev_data_y).to_s
+
+      mini_batch_samples += 1
+    end
     @array_of_a.last
   end
 
@@ -168,19 +172,24 @@ class NN
   end
 
   def create_layers(data_x)
+    @array_of_a = []
+    @array_of_z = []
+
     layer = 0
     while layer < @array_of_layers.size - 1
       @array_of_z[layer] = []
       @array_of_a[layer] = []
-      samples = 0
-      while samples < data_x.size
+      mini_batch_samples = 0
+      while mini_batch_samples < data_x.size
+        @array_of_z[layer][mini_batch_samples] = []
+        @array_of_a[layer][mini_batch_samples] = []
         if layer.zero?
-          @array_of_z[layer][samples] = @mm.add(@mm.dot(data_x[samples], @array_of_weights[layer]), @array_of_bias[layer])
+          @array_of_z[layer][mini_batch_samples] = @mm.add(@mm.dot(data_x[mini_batch_samples], @array_of_weights[layer]), @array_of_bias[layer])
         else
-          @array_of_z[layer][samples] = @mm.add(@mm.dot(@array_of_a[layer - 1][samples], @array_of_weights[layer]), @array_of_bias[layer])
+          @array_of_z[layer][mini_batch_samples] = @mm.add(@mm.dot(@array_of_a[layer - 1][mini_batch_samples], @array_of_weights[layer]), @array_of_bias[layer])
         end
-        @array_of_a[layer][samples] = apply_activ(@array_of_z[layer][samples], @array_of_activations[layer + 1])
-        samples += 1
+        @array_of_a[layer][mini_batch_samples] = apply_activ(@array_of_z[layer][mini_batch_samples], @array_of_activations[layer + 1])
+        mini_batch_samples += 1
       end
       layer += 1
     end
@@ -222,23 +231,19 @@ class NN
   end
 
   def back_propagation(data_x, data_y, tim)
-    delta_a = Array.new(@array_of_layers.size) { |e| e = [] }
+    delta_a = []
     layer = @array_of_layers.size - 1
     while layer > 0
       features = 0
       while features < @features
         if @cost_function == 'mse'
-          delta_a[layer][features] = @mm.subt(@array_of_a[layer - 1][features], [data_y].transpose) if layer == @array_of_layers.size - 1
-          delta_z = @mm.mult(delta_a[layer][features], apply_deriv(@array_of_z[layer - 1][features], nil, @array_of_activations[layer]))
+          delta_a << @mm.subt(@array_of_a[layer - 1][features], [data_y].transpose) if layer == @array_of_layers.size - 1
+          delta_z = @mm.mult(delta_a.pop, apply_deriv(@array_of_z[layer - 1][features], nil, @array_of_activations[layer]))
         elsif @cost_function == 'log_loss'
-          if layer != @array_of_layers.size - 1
-            delta_a[layer][features] = @mm.subt(@array_of_a[layer - 1][features], data_y) if layer == @array_of_layers.size - 1
-            delta_z = @mm.mult(delta_a[layer][features], apply_deriv(@array_of_z[layer - 1][features], data_y, @array_of_activations[layer]))
-          else
-            delta_z = apply_deriv(@array_of_z[layer - 1][features], data_y, @array_of_activations[layer])
-          end
+          delta_a << @array_of_a[layer - 1][features] if layer == @array_of_layers.size - 1
+          delta_z = @mm.mult(delta_a.pop, apply_deriv(@array_of_z[layer - 1][features], data_y, @array_of_activations[layer]))
         end
-        delta_a[layer - 1][features] = @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
+        delta_a.unshift @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
         if !@regularization_l2.nil?
           if layer - 2 >= 0
             tmp = @mm.mult(@mm.dot(@array_of_a[layer - 2][features].transpose, delta_z), (1.0 / data_x[0].size))
@@ -255,6 +260,7 @@ class NN
           @array_of_delta_w[layer] = tmp
         end
         @array_of_delta_b[layer] = @mm.mult(@mm.horizontal_sum(delta_z), (1.0 / data_x[0].size))
+
         features += 1
       end
       layer -= 1
@@ -371,19 +377,19 @@ class NN
     end
   end
 
-  def apply_cost(data_y)
+  def apply_cost(last_layer, data_y)
       tmp2 = @mm.f_norm(@array_of_weights.last)
       if @cost_function == 'mse'
         if !@regularization_l2.nil?
-          tmp1 = @c.quadratic_cost_with_r(@array_of_a.last, data_y, @regularization_l2, tmp2)
+          tmp1 = @c.quadratic_cost_with_r(last_layer, data_y, @regularization_l2, tmp2)
         else
-          tmp1 = @c.quadratic_cost(@array_of_a.last, data_y)
+          tmp1 = @c.quadratic_cost(last_layer, data_y)
         end
       elsif @cost_function == 'log_loss'
         if !@regularization_l2.nil?
-          tmp1 = @c.log_loss_cost_with_r(@array_of_a.last, data_y, @regularization_l2, tmp2)
+          tmp1 = @c.log_loss_cost_with_r(last_layer, data_y, @regularization_l2, tmp2)
         else
-          tmp1 = @c.log_loss_cost(@array_of_a.last, data_y)
+          tmp1 = @c.log_loss_cost(last_layer, data_y)
         end
       end
     tmp1
@@ -403,6 +409,7 @@ class NN
     elsif activation == 'softmax'
       tmp = @a.softmax(layer)
     end
+    tmp
   end
 
   def apply_deriv(layer, hat, activation)
