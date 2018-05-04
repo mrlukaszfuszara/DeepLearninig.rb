@@ -17,21 +17,20 @@ class NN
     add_nn(@features, 'nil')
   end
 
-  def add_nn(batch_size, activation, dropout = 1.0, batch_norm = nil)
+  def add_nn(batch_size, activation, dropout = 1.0)
     @array_of_layers << batch_size
     @array_of_activations << activation
     @array_of_dropouts << dropout
-    @array_of_batch_norms << batch_norm
   end
 
-  def compile(optimizer, cost_function, learning_rate, decay_rate = 1, iterations = 10, regularization_l2 = 0.1, momentum = [0.9, 0.999, 10**-8])
+  def compile(optimizer, cost_function, learning_rate, decay_rate = 1, iterations = 10, momentum = [0.9, 0.999, 10**-8], regularization_l2 = 0.1)
     @cost_function = cost_function
     @optimizer = optimizer
     @learning_rate = learning_rate
     @decay_rate = decay_rate
     @iterations = iterations
-    @regularization_l2 = regularization_l2
     @momentum = momentum
+    @regularization_l2 = regularization_l2
 
     i = 0
     while i < @array_of_layers.size - 1
@@ -67,7 +66,7 @@ class NN
         clock = (1.0 + time.inject(:+) / time.size / 60.0).floor if mini_batch_samples > 1
 
         clear = false
-        if time.size % 20 == 0
+        if time.size % 20 == 0 || mini_batch_samples == 1
           time.shift(time.size / 2)
           clear = true
         end
@@ -103,27 +102,29 @@ class NN
     @array_of_a.last
   end
 
-  def predict(dev_data_x, dev_data_y, batch_size)
+  def predict(dev_data_x, dev_data_y, batch_size, index_of_parameter)
     smb = SplitterMB.new(batch_size, dev_data_x, dev_data_y)
     dev_data_x = smb.data_x
     dev_data_y = smb.data_y
 
     @samples = dev_data_x.size
 
-    mini_batch_samples = 0
-    while mini_batch_samples < dev_data_x.size
-      @array_of_a = []
-      @array_of_z = []
+    @array_of_a = []
+    @array_of_z = []
 
-      create_layers(dev_data_x)
+    create_layers(dev_data_x)
 
-      last_layer = @array_of_a.last[mini_batch_samples]
+    prec = 0
+    rec = 0
 
-      puts 'Prediction error: ' + apply_cost(last_layer, dev_data_y).to_s
-
-      mini_batch_samples += 1
+    i = 0
+    while i < dev_data_x.size
+      prec += apply_precision(@array_of_a.last, dev_data_y, index_of_parameter)
+      rec += apply_recall(@array_of_a.last, dev_data_y, index_of_parameter)
+      i += 1
     end
-    @array_of_a.last
+
+    puts 'Accurency F1 Score: ' + f1_score(prec.to_f / dev_data_x.size, rec.to_f / dev_data_x.size)
   end
 
   def save_weights(path)
@@ -132,31 +133,39 @@ class NN
   end
 
   def save_architecture(path)
-    serialized_array = Marshal.dump([@cost_function, @regularization_l2, @array_of_layers, @array_of_activations, @array_of_dropouts, @array_of_batch_norms])
+    serialized_array = Marshal.dump([@array_of_layers, @array_of_activations, @array_of_dropouts, @optimizer, @cost_function, @learning_rate, @decay_rate, @iterations, @momentum, @regularization_l2])
     File.open(path, 'wb') { |f| f.write(serialized_array) }
   end
 
   def load_weights(path)
     tmp = Marshal.load File.open(path, 'rb')
+
     @array_of_weights = tmp[0]
     @array_of_bias = tmp[1]
   end
 
   def load_architecture(path)
     tmp = Marshal.load File.open(path, 'rb')
-    @cost_function = tmp[0]
-    @regularization_l2 = tmp[1]
-    @array_of_layers = tmp[2]
+
+    @array_of_layers = tmp[0]
     layers = @array_of_layers.size
     nodes = @array_of_layers
     @array_of_layers = []
-    @array_of_activations = tmp[3]
-    @array_of_dropouts = tmp[4]
-    @array_of_batch_norms = tmp[5]
 
+    @array_of_activations = tmp[1]
+    @array_of_dropouts = tmp[2]
+
+    @optimizer = tmp[3]
+    @cost_function = tmp[4]
+    @learning_rate = tmp[5]
+    @decay_rate = tmp[6]
+    @iterations = tmp[6]
+    @momentum = tmp[8]
+    @regularization_l2 = tmp[9]
+    
     i = 0
     while i < layers
-      add_nn(nodes[i].size, @array_of_activations[i], @array_of_dropouts[i], @array_of_batch_norms[i])
+      add_nn(nodes[i].size, @array_of_activations[i], @array_of_dropouts[i])
       i += 1
     end
   end
@@ -354,21 +363,59 @@ class NN
     end
   end
 
-  def apply_cost(last_layer, data_y)
-      tmp2 = @mm.f_norm(@array_of_weights.last)
-      if @cost_function == 'mse'
-        if !@regularization_l2.nil?
-          tmp1 = @c.quadratic_cost_with_r(last_layer, data_y, @regularization_l2, tmp2)
-        else
-          tmp1 = @c.quadratic_cost(last_layer, data_y)
+  def apply_precision(last_layer, dev_data_y, ind)
+    prec = 0
+    mini_batch = 0
+    while mini_batch < dev_data_y.size - 1
+      sample = 0
+      while sample < dev_data_y[mini_batch].size - 1
+        check = dev_data_y[mini_batch][sample] - last_layer[mini_batch][sample][0]
+        if check < 0.75 && check > -0.75 && dev_data_y[mini_batch][sample] == ind
+          prec += 1
         end
-      elsif @cost_function == 'log_loss'
-        if !@regularization_l2.nil?
-          tmp1 = @c.log_loss_cost_with_r(last_layer, data_y, @regularization_l2, tmp2)
-        else
-          tmp1 = @c.log_loss_cost(last_layer, data_y)
-        end
+        sample += 1
       end
+      mini_batch += 1
+    end
+    prec.to_f / (dev_data_y.size * dev_data_y[mini_batch].size)
+  end
+
+  def apply_recall(last_layer, dev_data_y, ind)
+    rec = 0
+    mini_batch = 0
+    while mini_batch < dev_data_y.size - 1
+      sample = 0
+      while sample < dev_data_y[mini_batch].size - 1
+        check = last_layer[mini_batch][sample][0]
+        if check < (0.75 + ind) && check > (-0.75 - ind)
+          rec += 1
+        end
+        sample += 1
+      end
+      mini_batch += 1
+    end
+    rec.to_f / (dev_data_y.size * dev_data_y[mini_batch].size)
+  end
+
+  def f1_score(prec, rec)
+    ((2.0 / ((1.0 / prec) + (1.0 / rec))) * 100).round(2).to_s + '%'
+  end
+
+  def apply_cost(last_layer, data_y)
+    tmp2 = @mm.f_norm(@array_of_weights.last)
+    if @cost_function == 'mse'
+      if !@regularization_l2.nil?
+        tmp1 = @c.quadratic_cost_with_r(last_layer, data_y, @regularization_l2, tmp2)
+      else
+        tmp1 = @c.quadratic_cost(last_layer, data_y)
+      end
+    elsif @cost_function == 'log_loss'
+      if !@regularization_l2.nil?
+        tmp1 = @c.log_loss_cost_with_r(last_layer, data_y, @regularization_l2, tmp2)
+      else
+        tmp1 = @c.log_loss_cost(last_layer, data_y)
+      end
+    end
     tmp1
   end
 

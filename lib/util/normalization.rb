@@ -1,5 +1,5 @@
 class Normalization
-  attr_reader :mean, :sigma
+  attr_reader :mean, :sigma, :sd
 
   def initialize(calc = true, matrix = nil)
     @mm = MatrixMath.new
@@ -10,42 +10,22 @@ class Normalization
 
   def calculate(matrix)
     mean = @mm.horizontal_sum(matrix)
-    i = 0
-    while i < mean.size
-      mean[i] = mean[i] / matrix.size
-      i += 1
-    end
-    @mean = mean
+    @mean = @mm.div(mean, mean.size)
 
-    tmp1 = @mm.mult(matrix, matrix)
-    sigma = @mm.horizontal_sum(tmp1)
-    i = 0
-    while i < sigma.size
-      sigma[i] = sigma[i] / matrix.size
-      i += 1
-    end
-    @sigma = sigma
+    tmp = @mm.mult(matrix, matrix)
+    tmp = @mm.horizontal_sum(tmp)
+    sigma = @mm.subt(tmp, @mean)
+    @sigma = @mm.div(tmp, sigma.size)
+
+    @sd = @mm.vector_sqrt(@mm.add(@sigma, 10**-8))
   end
 
-  def subt_mean(matrix, mean = nil)
-    if !mean.nil?
-      @mm.subt(matrix, mean)
+  def normalize_x(matrix, mean = nil, sd = nil)
+    if !mean.nil? && !sd.nil?
+      tmp = @mm.div(@mm.subt(matrix, mean), sd)
     else
-      @mm.subt(matrix, @mean)
+      tmp = @mm.div(@mm.subt(matrix, @mean), @sd)
     end
-  end
-
-  def normalize_x(matrix, sigma = nil)
-    if !sigma.nil?
-      @mm.div(matrix, @mm.vector_sqrt(@mm.add(sigma, 10**-8)))
-    else
-      @mm.div(matrix, @mm.vector_sqrt(@mm.add(@sigma, 10**-8)))
-    end
-  end
-
-  def z_norm(matrix, mean = nil, sigma = nil)
-    tmp1 = @mm.subt(matrix, mean)
-    tmp2 = @mm.vector_sqrt(@mm.add(@sigma, 10**-8))
-    @mm.div(tmp1, tmp2)
+    @mm.matrix_abs(tmp)
   end
 end

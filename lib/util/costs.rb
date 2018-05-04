@@ -9,7 +9,7 @@ class Costs
     while i < data_y[0].size
       tmp = @mm.subt(data_y[i], data_y_hat.flatten)
       tmp = @mm.mult(tmp, tmp)
-      tmp = 0.5 * tmp.inject(:+)
+      tmp = 0.5 * tmp.inject(:+) / data_y[0].size
       i += 1
     end
     tmp
@@ -21,7 +21,7 @@ class Costs
     while i < data_y[0].size
       tmp = @mm.subt(data_y[i], data_y_hat.flatten)
       tmp = @mm.mult(tmp, tmp)
-      tmp = 0.5 * tmp.inject(:+) + (lambd / (2.0 * data_y.size) * norm)
+      tmp = 0.5 * tmp.inject(:+) / data_y[0].size + (lambd / (2.0 * data_y.size) * norm)
       i += 1
     end
     tmp
