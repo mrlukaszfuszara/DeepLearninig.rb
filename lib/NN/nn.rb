@@ -117,6 +117,8 @@ class NN
     prec = 0
     rec = 0
 
+    p @array_of_a.last
+
     i = 0
     while i < dev_data_x.size
       prec += apply_precision(@array_of_a.last, dev_data_y, index_of_parameter)
@@ -124,7 +126,9 @@ class NN
       i += 1
     end
 
-    puts 'Accurency F1 Score: ' + f1_score(prec.to_f / dev_data_x.size, rec.to_f / dev_data_x.size)
+    puts 'Accurency: ' + (prec / dev_data_x.size * 100).round(2).to_s + '%'
+    puts 'Recall: ' + (rec / dev_data_x.size * 100).round(2).to_s + '%'
+    puts 'F1 Score: ' + (f1_score(prec.to_f / dev_data_x.size, rec.to_f / dev_data_x.size) * 100).round(2).to_s + '%'
   end
 
   def save_weights(path)
@@ -370,7 +374,7 @@ class NN
       sample = 0
       while sample < dev_data_y[mini_batch].size - 1
         check = dev_data_y[mini_batch][sample] - last_layer[mini_batch][sample][0]
-        if check < 0.75 && check > -0.75 && dev_data_y[mini_batch][sample] == ind
+        if check < 0.5 && check > -0.5
           prec += 1
         end
         sample += 1
@@ -387,7 +391,7 @@ class NN
       sample = 0
       while sample < dev_data_y[mini_batch].size - 1
         check = last_layer[mini_batch][sample][0]
-        if check < (0.75 + ind) && check > (-0.75 - ind)
+        if check < (0.5 + ind) && check > (-0.5 - ind) && dev_data_y[mini_batch][sample] == ind
           rec += 1
         end
         sample += 1
@@ -396,9 +400,8 @@ class NN
     end
     rec.to_f / (dev_data_y.size * dev_data_y[mini_batch].size)
   end
-
   def f1_score(prec, rec)
-    ((2.0 / ((1.0 / prec) + (1.0 / rec))) * 100).round(2).to_s + '%'
+    2.0 / ((1.0 / prec) + (1.0 / rec))
   end
 
   def apply_cost(last_layer, data_y)

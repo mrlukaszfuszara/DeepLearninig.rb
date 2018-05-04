@@ -15,7 +15,7 @@ class Main
   def train(data_x, data_y, batch_size, epochs, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     nn = NN.new(data_x[0].size)
     nn.add_nn(16, 'leaky_relu')
-    #nn.add_nn(64, 'leaky_relu', 0.7)
+    nn.add_nn(32, 'leaky_relu', 0.7)
     nn.add_nn(1, 'leaky_relu')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     tmp = nn.fit(data_x, data_y, batch_size, epochs)
@@ -72,15 +72,15 @@ dev_set_y = dev_set[1]
 test_set_x = test_set[0]
 test_set_y = test_set[1]
 
-n = Normalization.new(true, train_set_x)
-train_set_x = n.normalize_x(train_set_x)
-dev_set_x = n.normalize_x(dev_set_x)
+#n = Normalization.new(true, train_set_x)
+#train_set_x = n.z_score(train_set_x)
+#dev_set_x = n.z_score(dev_set_x)
 
-epochs = 10
-optimizer = 'Adam'
+epochs = 2
+optimizer = 'RMSprop'
 cost_function = 'mse'
-learning_rate = 0.001
-regularization_l2 = 0.1
+learning_rate = 0.0001
+regularization_l2 = 0.001
 iterations = 20
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
@@ -89,4 +89,4 @@ main = Main.new
 main.train(train_set_x, train_set_y, batch_size, epochs, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
 
 index_of_parameter = 5
-t = main.predict(dev_set_x, dev_set_y, batch_size, index_of_parameter)
+main.predict(dev_set_x, dev_set_y, batch_size, index_of_parameter)

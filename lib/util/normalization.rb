@@ -10,22 +10,23 @@ class Normalization
 
   def calculate(matrix)
     mean = @mm.horizontal_sum(matrix)
-    @mean = @mm.div(mean, mean.size)
+    @mean = @mm.div(mean, matrix.size)
 
     tmp = @mm.mult(matrix, matrix)
     tmp = @mm.horizontal_sum(tmp)
     sigma = @mm.subt(tmp, @mean)
-    @sigma = @mm.div(tmp, sigma.size)
+
+    @sigma = @mm.div(tmp, matrix.size)
 
     @sd = @mm.vector_sqrt(@mm.add(@sigma, 10**-8))
   end
 
-  def normalize_x(matrix, mean = nil, sd = nil)
+  def z_score(matrix, mean = nil, sd = nil)
     if !mean.nil? && !sd.nil?
       tmp = @mm.div(@mm.subt(matrix, mean), sd)
     else
       tmp = @mm.div(@mm.subt(matrix, @mean), @sd)
     end
-    @mm.matrix_abs(tmp)
+    tmp
   end
 end
