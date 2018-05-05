@@ -144,7 +144,7 @@ class NN
 
     create_layers(dev_data_x)
 
-    prec = apply_precision(@array_of_a.last[i], dev_data_y[i], ind)
+    prec = apply_precision(@array_of_a.last, dev_data_y, ind)
 
     puts 'Accurency: ' + (prec * 100).round(2).to_s + '%'
   end
@@ -420,7 +420,7 @@ class NN
           check = max_val
           one_hot = 0
           while one_hot < dev_data_y[mini_batch][sample].size
-            if check < 0.5 && check > -0.5 && max_index == one_hot
+            if check <= 1.0 && check > 0.75 && max_index == one_hot
               prec += 1
             end
             one_hot += 1
