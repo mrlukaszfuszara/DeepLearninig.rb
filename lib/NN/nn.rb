@@ -44,10 +44,17 @@ class NN
     end
   end
 
-  def fit(train_data_x, train_data_y, batch_size, epochs = 10)
+  def fit(train_data_x, train_data_y, batch_size, epochs, dev_data = nil)
     smb = SplitterMB.new(batch_size, train_data_x, train_data_y)
     train_data_x = smb.data_x
     train_data_y = smb.data_y
+
+    if !dev_data.nil?
+      smb = SplitterMB.new(batch_size, dev_data[0], dev_data[1])
+      dev_data_x = smb.data_x
+      dev_data_y = smb.data_y
+      ind = dev_data[2]
+    end
 
     @samples = train_data_x.size
 
@@ -84,6 +91,12 @@ class NN
             apply_cost(@array_of_a.last[mini_batch_samples], train_data_y[mini_batch_samples]).to_s + ', ends: ' + clock.to_s + ' minutes'
         end
 
+        acc_str = nil
+        if !dev_data.nil?
+          prec = apply_precision(@array_of_a.last, dev_data_y, ind)
+          acc_str = (prec * 100).round(2).to_s
+        end
+
         apply_dropout
 
         create_delta_arrays
@@ -95,7 +108,11 @@ class NN
           update_weights
         end
 
-        puts str
+        if !acc_str.nil?
+          puts str + ', acc: ' + acc_str + '%'
+        else
+          puts str
+        end
 
         windows_size = IO.console.winsize[1].to_f
 
@@ -107,7 +124,6 @@ class NN
         pg_bar =  100 * percent / windows_size
 
         puts '[' + '#' * (pg_bar * 100).floor + '*' * (100 - pg_bar * 100).floor + '] ' + (pg_bar * 100).floor.to_s + '%'
-        puts ''
 
         @toc = Time.new
         mini_batch_samples += 1
@@ -128,16 +144,9 @@ class NN
 
     create_layers(dev_data_x)
 
-    prec = 0
-    rec = 0
+    prec = apply_precision(@array_of_a.last[i], dev_data_y[i], ind)
 
-    i = 0
-    while i < dev_data_x.size
-      prec += apply_precision(@array_of_a.last, dev_data_y, ind)
-      i += 1
-    end
-
-    puts 'Accurency: ' + (prec / dev_data_x.size * 100).round(2).to_s + '%'
+    puts 'Accurency: ' + (prec * 100).round(2).to_s + '%'
   end
 
   def save_weights(path)
@@ -186,7 +195,7 @@ class NN
   private
 
   def create_weights(counter)
-    @mm.mult(@g.random_matrix(@array_of_layers[counter], @array_of_layers[counter + 1], 0.001..0.01), Math.sqrt(2.0 / @features)) #/
+    @mm.mult(@g.random_matrix(@array_of_layers[counter], @array_of_layers[counter + 1], 0.0..0.01), Math.sqrt(2.0 / @features)) #/
   end
 
   def create_bias(counter)
@@ -391,7 +400,7 @@ class NN
           check = dev_data_y[mini_batch][sample] - last_layer[mini_batch][sample][0]
           min_max_scale = 0
           while min_max_scale < ind[1] - ind[0]
-            if check < 1.0 && check > -1.0 && dev_data_y[mini_batch][sample] == ind[0] + min_max_scale
+            if check < 0.5 && check > -0.5 && dev_data_y[mini_batch][sample] == ind[0] + min_max_scale
               prec += 1
             end
             min_max_scale += 1
@@ -411,7 +420,7 @@ class NN
           check = max_val
           one_hot = 0
           while one_hot < dev_data_y[mini_batch][sample].size
-            if check < 1.0 && check > -1.0 && max_index == one_hot
+            if check < 0.5 && check > -0.5 && max_index == one_hot
               prec += 1
             end
             one_hot += 1
