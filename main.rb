@@ -1,3 +1,4 @@
+require 'io/console'
 require 'csv'
 
 require './lib/util/splitter_tdt'
@@ -84,7 +85,7 @@ cost_function = 'mse'
 learning_rate = 0.001
 regularization_l2 = 0.001
 iterations = 6
-decay_rate = 1
+decay_rate = 10
 momentum = [0.9, 0.999, 10**-8]
 
 main = Main.new

@@ -77,10 +77,10 @@ class NN
         create_layers(train_data_x)
 
         if clear
-          puts 'Iter: ' + (counter * @iterations).to_s + ' of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
+          str = 'Epoch: ' + (t + 1).to_s + ', iter: ' + (counter * @iterations).to_s + ', of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
             apply_cost(@array_of_a.last[mini_batch_samples], train_data_y[mini_batch_samples]).to_s + ', ends: ' + '~' + ' minutes'
         else
-          puts 'Iter: ' + (counter * @iterations).to_s + ' of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
+          str = 'Epoch: ' + (t + 1).to_s + ', iter: ' + (counter * @iterations).to_s + ', of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
             apply_cost(@array_of_a.last[mini_batch_samples], train_data_y[mini_batch_samples]).to_s + ', ends: ' + clock.to_s + ' minutes'
         end
 
@@ -94,6 +94,20 @@ class NN
           back_propagation(train_data_x[mini_batch_samples], train_data_y[mini_batch_samples], mini_batch_samples, batch_size)
           update_weights
         end
+
+        puts str
+
+        windows_size = IO.console.winsize[1].to_f
+
+        max_val = (epochs * train_data_x.size).to_f
+        current_val = (counter).to_f
+
+        percent = current_val / max_val
+
+        pg_bar =  100 * percent / windows_size
+
+        puts '[' + '#' * (pg_bar * 100).floor + '*' * (100 - pg_bar * 100).floor + '] ' + (pg_bar * 100).floor.to_s + '%'
+        puts ''
 
         @toc = Time.new
         mini_batch_samples += 1
