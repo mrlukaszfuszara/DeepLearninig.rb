@@ -74,7 +74,7 @@ class NN
         counter += 1
         create_layers(train_data_x)
 
-        last_layer = @array_of_a.last[mini_batch_samples]
+        last_layer = @array_of_a.last
 
         if clear
           puts 'Iter: ' + (counter * @iterations).to_s + ' of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
@@ -116,8 +116,6 @@ class NN
 
     prec = 0
     rec = 0
-
-    p @array_of_a.last
 
     i = 0
     while i < dev_data_x.size
@@ -262,9 +260,14 @@ class NN
           delta_z = @mm.mult(delta_a.pop, apply_deriv(@array_of_z[layer - 1][features], nil, @array_of_activations[layer]))
           delta_a.unshift @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
         elsif @cost_function == 'log_loss'
-          delta_a << apply_deriv(@array_of_z[layer - 1][features], data_y, 'softmax') if layer == @array_of_layers.size - 1
-          delta_z = @mm.mult(delta_a.pop, apply_deriv(@array_of_z[layer - 1][features], data_y, 'softmax'))
-          delta_a.unshift @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
+          if layer == @array_of_layers.size - 1
+            delta_a << @mm.subt(@array_of_a[layer - 1][features], data_y)
+            delta_z = delta_a.pop
+            delta_a.unshift @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
+          else
+            delta_z = @mm.mult(delta_a.pop, apply_deriv(@array_of_z[layer - 1][features], nil, @array_of_activations[layer]))
+            delta_a.unshift @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
+          end
         end
         if !@regularization_l2.nil?
           if layer - 2 >= 0
@@ -373,9 +376,31 @@ class NN
     while mini_batch < dev_data_y.size - 1
       sample = 0
       while sample < dev_data_y[mini_batch].size - 1
-        check = dev_data_y[mini_batch][sample] - last_layer[mini_batch][sample][0]
-        if check < 0.5 && check > -0.5
-          prec += 1
+        if @array_of_activations.last != 'softmax'
+          check = dev_data_y[mini_batch][sample] - last_layer[mini_batch][sample][0]
+          if check < 0.5 && check > -0.5 && dev_data_y[mini_batch][sample] == ind
+            prec += 1
+          end
+        else
+          subt = @mm.subt(dev_data_y[mini_batch][sample], last_layer[mini_batch][sample])
+          max_val = 0
+          max_index = 0
+          one_hot = 0
+          while one_hot < dev_data_y[mini_batch][sample].size
+            if subt[one_hot] > max_val
+              max_val = subt[one_hot]
+              max_index = one_hot
+            end
+            one_hot += 1
+          end
+          check = max_val
+          one_hot = 0
+          while one_hot < dev_data_y[mini_batch][sample].size
+            if check < 0.75 && check > -0.75 && max_index == one_hot
+              prec += 1
+            end
+            one_hot += 1
+          end
         end
         sample += 1
       end
@@ -390,9 +415,31 @@ class NN
     while mini_batch < dev_data_y.size - 1
       sample = 0
       while sample < dev_data_y[mini_batch].size - 1
-        check = last_layer[mini_batch][sample][0]
-        if check < (0.5 + ind) && check > (-0.5 - ind) && dev_data_y[mini_batch][sample] == ind
-          rec += 1
+        if @array_of_activations.last != 'softmax'
+          check = last_layer[mini_batch][sample][0]
+          if check < (0.5 + ind) && check > (-0.5 - ind) && dev_data_y[mini_batch][sample] == ind
+            rec += 1
+          end
+        else
+          subt = @mm.subt(dev_data_y[mini_batch][sample], last_layer[mini_batch][sample])
+          max_val = 0
+          max_index = 0
+          one_hot = 0
+          while one_hot < dev_data_y[mini_batch][sample].size
+            if subt[one_hot] > max_val
+              max_val = subt[one_hot]
+              max_index = one_hot
+            end
+            one_hot += 1
+          end
+          check = max_val
+          one_hot = 0
+          while one_hot < dev_data_y[mini_batch][sample].size
+            if check < (0.25 + max_val) && check > (-0.25 - max_val) && max_index == one_hot
+              rec += 1
+            end
+            one_hot += 1
+          end
         end
         sample += 1
       end
@@ -400,6 +447,7 @@ class NN
     end
     rec.to_f / (dev_data_y.size * dev_data_y[mini_batch].size)
   end
+
   def f1_score(prec, rec)
     2.0 / ((1.0 / prec) + (1.0 / rec))
   end

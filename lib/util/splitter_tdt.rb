@@ -1,5 +1,5 @@
 class SpliterTDT
-  attr_reader :train, :dev, :test
+  attr_reader :train_s, :dev_s, :test_s
 
   def initialize(data_x, data_y, train_size = 0.6, dev_size = 0.2, test_size = 0.2)
     if train_size + dev_size + test_size == 1.0
@@ -18,21 +18,21 @@ class SpliterTDT
     size_of_dev = (data_x_size * dev_size).floor
     size_of_test = (data_x_size * test_size).floor
 
-    @train = [[], []]
-    @dev = [[], []]
-    @test = [[], []]
+    @train_s = [[], []]
+    @dev_s = [[], []]
+    @test_s = [[], []]
 
     i = 0
     while i < data_x_size
       if i < size_of_train
-        @train[0] << @data_x[i]
-        @train[1] << @data_y[i]
+        @train_s[0] << @data_x[i]
+        @train_s[1] << @data_y[i]
       elsif i >= size_of_train && i < size_of_train + size_of_dev
-        @dev[0] << @data_x[i]
-        @dev[1] << @data_y[i]
+        @dev_s[0] << @data_x[i]
+        @dev_s[1] << @data_y[i]
       elsif i >= size_of_train + size_of_dev && i <= size_of_train + size_of_dev + size_of_test
-        @test[0] << @data_x[i]
-        @test[1] << @data_y[i]
+        @test_s[0] << @data_x[i]
+        @test_s[1] << @data_y[i]
       end
       i += 1
     end
