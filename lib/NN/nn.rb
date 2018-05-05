@@ -421,7 +421,9 @@ class NN
       end
       mini_batch += 1
     end
-    prec.to_f / (dev_data_y.size * dev_data_y[0].size * dev_data_y[0][0].size)
+    tmp = prec.to_f / (dev_data_y.size * dev_data_y[0].size * dev_data_y[0][0].size) if @array_of_activations.last == 'softmax'
+    tmp = prec.to_f / (dev_data_y.size * dev_data_y[0].size) if @array_of_activations.last != 'softmax'
+    tmp
   end
 
   def apply_cost(last_layer, data_y)
