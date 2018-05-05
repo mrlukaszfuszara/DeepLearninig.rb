@@ -6,59 +6,61 @@ class Costs
   def quadratic_cost(data_y_hat, data_y)
     array = []
     i = 0
-    while i < data_y[0].size
-      tmp = @mm.subt(data_y[i], data_y_hat[i].flatten)
-      tmp = @mm.mult(tmp, tmp)
-      array[i] = 0.5 * tmp.inject(:+) / data_y[0].size
+    while i < data_y.size
+      tmp = data_y[i] - data_y_hat[i].flatten[0]
+      tmp = tmp**2
+      array[i] = 0.5 * tmp / data_y.size
       i += 1
     end
-    tmp.inject(:+) / array.size
+    array.inject(:+) / array.size
   end
 
   def quadratic_cost_with_r(data_y_hat, data_y, lambd, norm)
     array = []
     i = 0
-    while i < data_y[0].size
-      tmp = @mm.subt(data_y[i], data_y_hat[i].flatten)
-      tmp = @mm.mult(tmp, tmp)
-      array[i] = 0.5 * tmp.inject(:+) / data_y[0].size + (lambd / (2.0 * data_y.size) * norm)
+    while i < data_y.size
+      tmp = data_y[i] - data_y_hat[i].flatten[0]
+      tmp = tmp**2
+      array[i] = 0.5 * tmp / data_y.size + (lambd / (2.0 * data_y.size) * norm)
+      i += 1
+    end
+    array.inject(:+) / array.size
+  end
+
+  def log_loss_cost(data_y_hat, data_y)
+    mln = @mm.matrix_ln(data_y_hat)
+    array = []
+    i = 0
+    while i < data_y.size
+      tmp = []
+      j = 0
+      while j < data_y[0].size
+        tmp[i] = @mm.mult(data_y[i], mln[i])
+        j += 1
+      end
+      tmp = @mm.mult(tmp[i], -1.0)
+      array[i] = tmp.inject(:+)
       i += 1
     end
     tmp.inject(:+) / array.size
   end
 
-  def log_loss_cost(data_y_hat, data_y)
-    array = []
-    i = 0
-    while i < data_y[0].size
-      tmp = []
-      j = 0
-      while j < data_y[0][0].size
-        tmp[i] = @mm.mult(@mm.mult(data_y[i], @mm.matrix_ln(data_y_hat[i])), -1.0)
-        j += 1
-      end
-      tmp = @mm.div(@mm.vertical_sum(tmp[i]), data_y[0][0].size)
-      array[i] = tmp.inject(:+)
-      i += 1
-    end
-    tmp.inject(:+) / data_y[0].size
-  end
-
   def log_loss_cost_with_r(data_y_hat, data_y, lambd, norm)
+    mln = @mm.matrix_ln(data_y_hat)
     array = []
     i = 0
-    while i < data_y[0].size
+    while i < data_y.size
       tmp = []
       j = 0
-      while j < data_y[0][0].size
-        tmp[i] = @mm.mult(@mm.mult(data_y[i], @mm.matrix_ln(data_y_hat[i])), -1.0)
+      while j < data_y[0].size
+        tmp[i] = @mm.mult(data_y[i], mln[i])
         j += 1
       end
-      tmp = @mm.div(@mm.vertical_sum(tmp[i]), data_y[0][0].size)
+      tmp = @mm.mult(tmp[i], -1.0)
       array[i] = tmp.inject(:+) + (lambd / (2.0 * data_y.size) * norm)
       i += 1
     end
-    tmp.inject(:+) / data_y[0].size
+    tmp.inject(:+) / array.size
   end
 
   private

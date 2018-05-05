@@ -51,6 +51,8 @@ class NN
 
     @samples = train_data_x.size
 
+    @tic = Time.new
+
     counter = 0
     epochs.times do |t|
       @learning_rate = @learning_rate / (1.0 + @decay_rate * t)
@@ -59,11 +61,11 @@ class NN
 
       mini_batch_samples = 0
       while mini_batch_samples < train_data_x.size
-        @start_time = Time.new
+        @tac = Time.new
         
-        time << ((epochs * train_data_x.size) - (counter)) * (@start_time - @end_time) * 1_000_000 if mini_batch_samples > 0
+        time << ((epochs * train_data_x.size) - (counter)) * (@tac - @toc) * (@tac - @tic) * 1_000_000 * (1.0 / (@toc - @tic)) if mini_batch_samples > 0
 
-        clock = (1.0 + time.inject(:+) / time.size / 60.0).floor if mini_batch_samples > 1
+        clock = (time.inject(:+) / time.size / 60.0).floor if mini_batch_samples > 1
 
         clear = false
         if time.size % 20 == 0 || mini_batch_samples == 1
@@ -74,14 +76,12 @@ class NN
         counter += 1
         create_layers(train_data_x)
 
-        last_layer = @array_of_a.last
-
         if clear
           puts 'Iter: ' + (counter * @iterations).to_s + ' of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
-            apply_cost(last_layer, train_data_y).to_s + ', ends: ' + '~' + ' minutes'
+            apply_cost(@array_of_a.last[mini_batch_samples], train_data_y[mini_batch_samples]).to_s + ', ends: ' + '~' + ' minutes'
         else
           puts 'Iter: ' + (counter * @iterations).to_s + ' of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
-            apply_cost(last_layer, train_data_y).to_s + ', ends: ' + clock.to_s + ' minutes'
+            apply_cost(@array_of_a.last[mini_batch_samples], train_data_y[mini_batch_samples]).to_s + ', ends: ' + clock.to_s + ' minutes'
         end
 
         apply_dropout
@@ -95,14 +95,14 @@ class NN
           update_weights
         end
 
-        @end_time = Time.new
+        @toc = Time.new
         mini_batch_samples += 1
       end
     end
     @array_of_a.last
   end
 
-  def predict(dev_data_x, dev_data_y, batch_size, index_of_parameter)
+  def predict(dev_data_x, dev_data_y, batch_size, ind)
     smb = SplitterMB.new(batch_size, dev_data_x, dev_data_y)
     dev_data_x = smb.data_x
     dev_data_y = smb.data_y
@@ -119,14 +119,11 @@ class NN
 
     i = 0
     while i < dev_data_x.size
-      prec += apply_precision(@array_of_a.last, dev_data_y, index_of_parameter)
-      rec += apply_recall(@array_of_a.last, dev_data_y, index_of_parameter)
+      prec += apply_precision(@array_of_a.last, dev_data_y, ind)
       i += 1
     end
 
     puts 'Accurency: ' + (prec / dev_data_x.size * 100).round(2).to_s + '%'
-    puts 'Recall: ' + (rec / dev_data_x.size * 100).round(2).to_s + '%'
-    puts 'F1 Score: ' + (f1_score(prec.to_f / dev_data_x.size, rec.to_f / dev_data_x.size) * 100).round(2).to_s + '%'
   end
 
   def save_weights(path)
@@ -378,8 +375,12 @@ class NN
       while sample < dev_data_y[mini_batch].size - 1
         if @array_of_activations.last != 'softmax'
           check = dev_data_y[mini_batch][sample] - last_layer[mini_batch][sample][0]
-          if check < 0.5 && check > -0.5 && dev_data_y[mini_batch][sample] == ind
-            prec += 1
+          min_max_scale = 0
+          while min_max_scale < ind[1] - ind[0]
+            if check < 1.0 && check > -1.0 && dev_data_y[mini_batch][sample] == ind[0] + min_max_scale
+              prec += 1
+            end
+            min_max_scale += 1
           end
         else
           subt = @mm.subt(dev_data_y[mini_batch][sample], last_layer[mini_batch][sample])
@@ -396,7 +397,7 @@ class NN
           check = max_val
           one_hot = 0
           while one_hot < dev_data_y[mini_batch][sample].size
-            if check < 0.75 && check > -0.75 && max_index == one_hot
+            if check < 1.0 && check > -1.0 && max_index == one_hot
               prec += 1
             end
             one_hot += 1
@@ -406,50 +407,7 @@ class NN
       end
       mini_batch += 1
     end
-    prec.to_f / (dev_data_y.size * dev_data_y[mini_batch].size)
-  end
-
-  def apply_recall(last_layer, dev_data_y, ind)
-    rec = 0
-    mini_batch = 0
-    while mini_batch < dev_data_y.size - 1
-      sample = 0
-      while sample < dev_data_y[mini_batch].size - 1
-        if @array_of_activations.last != 'softmax'
-          check = last_layer[mini_batch][sample][0]
-          if check < (0.5 + ind) && check > (-0.5 - ind) && dev_data_y[mini_batch][sample] == ind
-            rec += 1
-          end
-        else
-          subt = @mm.subt(dev_data_y[mini_batch][sample], last_layer[mini_batch][sample])
-          max_val = 0
-          max_index = 0
-          one_hot = 0
-          while one_hot < dev_data_y[mini_batch][sample].size
-            if subt[one_hot] > max_val
-              max_val = subt[one_hot]
-              max_index = one_hot
-            end
-            one_hot += 1
-          end
-          check = max_val
-          one_hot = 0
-          while one_hot < dev_data_y[mini_batch][sample].size
-            if check < (0.25 + max_val) && check > (-0.25 - max_val) && max_index == one_hot
-              rec += 1
-            end
-            one_hot += 1
-          end
-        end
-        sample += 1
-      end
-      mini_batch += 1
-    end
-    rec.to_f / (dev_data_y.size * dev_data_y[mini_batch].size)
-  end
-
-  def f1_score(prec, rec)
-    2.0 / ((1.0 / prec) + (1.0 / rec))
+    prec.to_f / (dev_data_y.size * dev_data_y[0].size * dev_data_y[0][0].size)
   end
 
   def apply_cost(last_layer, data_y)

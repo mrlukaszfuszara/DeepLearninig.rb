@@ -14,14 +14,11 @@ require './lib/nn/nn'
 class Main
   def train(data_x, data_y, batch_size, epochs, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     nn = NN.new(data_x[0].size)
+    nn.add_nn(1, 'leaky_relu')
     nn.add_nn(16, 'leaky_relu')
-    nn.add_nn(16, 'leaky_relu', 0.7)
-    nn.add_nn(16, 'leaky_relu', 0.7)
-    nn.add_nn(16, 'leaky_relu', 0.7)
-    nn.add_nn(16, 'leaky_relu', 0.7)
-    nn.add_nn(16, 'leaky_relu', 0.7)
-    nn.add_nn(16, 'leaky_relu', 0.7)
-    nn.add_nn(6, 'softmax')
+    nn.add_nn(32, 'leaky_relu', 0.7)
+    nn.add_nn(8, 'leaky_relu')
+    nn.add_nn(1, 'leaky_relu')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     tmp = nn.fit(data_x, data_y, batch_size, epochs)
     nn.save_weights('./weights.msh')
@@ -59,8 +56,8 @@ while i < tmp.size
   i += 1
 end
 
-gen = Generators.new
-data_y = gen.one_hot_vector(data_y)
+#gen = Generators.new
+#data_y = gen.one_hot_vector(data_y)
 
 stdt = SpliterTDT.new(data_x, data_y)
 train_set = stdt.train_s
@@ -83,8 +80,8 @@ dev_set_x = n.z_score(dev_set_x)
 
 epochs = 10
 optimizer = 'RMSprop'
-cost_function = 'log_loss'
-learning_rate = 0.0001
+cost_function = 'mse'
+learning_rate = 0.001
 regularization_l2 = 0.001
 iterations = 6
 decay_rate = 1
@@ -93,5 +90,6 @@ momentum = [0.9, 0.999, 10**-8]
 main = Main.new
 main.train(train_set_x, train_set_y, batch_size, epochs, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
 
-index_of_parameter = 5
-main.predict(dev_set_x, dev_set_y, batch_size, index_of_parameter)
+ind = [train_set_y.min, train_set_y.max]
+
+main.predict(dev_set_x, dev_set_y, batch_size, ind)
