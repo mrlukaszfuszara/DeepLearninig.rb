@@ -1,11 +1,8 @@
 class Normalization
   attr_reader :mean, :sigma, :sd
 
-  def initialize(calc = true, matrix = nil)
+  def initialize
     @mm = MatrixMath.new
-    if calc
-      calculate(matrix)
-    end
   end
 
   def calculate(matrix)
@@ -28,5 +25,29 @@ class Normalization
       tmp = @mm.div(@mm.subt(matrix, @mean), @sd)
     end
     tmp
+  end
+
+  def min_max_scaler(matrix)
+    matrix = matrix.transpose
+    min_val = []
+    max_val = []
+    i = 0
+    while i < matrix.size
+      min_val[i] = matrix[i].min
+      max_val[i] = matrix[i].max
+      i += 1
+    end
+    array = []
+    i = 0
+    while i < matrix.size
+      array[i] = []
+      j = 0
+      while j < matrix[i].size
+        array[i][j] = (matrix[i][j] - min_val[i]) / (max_val[i] - min_val[i])
+        j += 1
+      end
+      i += 1
+    end
+    array.transpose
   end
 end

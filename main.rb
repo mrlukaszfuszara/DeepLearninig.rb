@@ -14,10 +14,12 @@ require './lib/nn/nn'
 
 class Main
   def train(data_x, data_y, batch_size, epochs, dev_data, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
-    nn = NN.new(data_x[0].size)
-    nn.add_nn(16, 'leaky_relu')
-    nn.add_nn(32, 'leaky_relu', 0.7)
+    nn = NN.new
+    nn.input(data_x[0].size, 'leaky_relu')
     nn.add_nn(8, 'leaky_relu')
+    nn.add_nn(16, 'leaky_relu', 0.8)
+    nn.add_nn(16, 'leaky_relu', 0.8)
+    #nn.add_nn(32, 'leaky_relu', 0.8)
     nn.add_nn(1, 'leaky_relu')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     tmp = nn.fit(data_x, data_y, batch_size, epochs, dev_data)
@@ -67,23 +69,28 @@ test_set = stdt.test_s
 train_set_x = train_set[0]
 train_set_y = train_set[1]
 
-batch_size = 32
+batch_size = 64
 
 dev_set_x = dev_set[0]
 dev_set_y = dev_set[1]
 test_set_x = test_set[0]
 test_set_y = test_set[1]
 
-n = Normalization.new(true, train_set_x)
+n = Normalization.new
+n.calculate(train_set_x)
+
 train_set_x = n.z_score(train_set_x)
+train_set_x = n.min_max_scaler(train_set_x)
+
 dev_set_x = n.z_score(dev_set_x)
+dev_set_x = n.min_max_scaler(dev_set_x)
 
 epochs = 10
-optimizer = 'BGD'
+optimizer = 'RMSprop'
 cost_function = 'mse'
-learning_rate = 0.001
-regularization_l2 = 0.005
-iterations = 10
+learning_rate = 0.0000001
+regularization_l2 = nil
+iterations = 200
 decay_rate = 10
 momentum = [0.9, 0.999, 10**-8]
 ind = [train_set_y.min, train_set_y.max]
@@ -91,4 +98,4 @@ ind = [train_set_y.min, train_set_y.max]
 main = Main.new
 main.train(train_set_x, train_set_y, batch_size, epochs, [dev_set_x, dev_set_y, ind], cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
 
-main.predict(dev_set_x, dev_set_y, batch_size, ind)
+main.predict(test_set_y, test_set_y, batch_size, ind)

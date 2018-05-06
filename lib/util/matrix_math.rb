@@ -5,6 +5,26 @@ class MatrixMath
     [s0, s1]
   end
 
+  def matrix_size_of_elements(array)
+    arr = []
+    i = 0
+    while i < array.size
+      arr << array[i].size
+      i += 1
+    end
+    arr
+  end
+
+  def reverse_matrix(matrix)
+    array = Array.new(matrix.size)
+    i = 0
+    while i < matrix.size
+      array[i] = matrix[-i]
+      i += 1
+    end
+    array
+  end
+
   def f_norm(matrix)
     sum = 0
     array = []
