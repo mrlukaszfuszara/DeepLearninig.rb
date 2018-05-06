@@ -330,14 +330,14 @@ class NN
   def update_weights
     if @optimizer == 'BGD'
       layer = @array_of_weights.size - 1
-      while layer > 0
+      while layer >= 0
         @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(@array_of_delta_w[layer + 1], @learning_rate))
         @array_of_bias[layer] = @mm.subt(@array_of_bias[layer], @mm.mult(@array_of_delta_b[layer + 1], @learning_rate))
         layer -= 1
       end
     elsif @optimizer == 'BGDwM'
       layer = @array_of_weights.size - 1
-      while layer > 0
+      while layer >= 0
         tmp0 = @mm.mult(@array_of_v_delta_w[layer], @momentum[0])
         tmp1 = @mm.mult(@array_of_delta_w[layer + 1], (1.0 - @momentum[0]))
         @array_of_v_delta_w[layer] = @mm.add(tmp0, tmp1)
@@ -352,24 +352,24 @@ class NN
       end
     elsif @optimizer == 'RMSprop'
       layer = @array_of_weights.size - 1
-      while layer > 0
+      while layer >= 0
         tmp0 = @mm.mult(@array_of_s_delta_w[layer], @momentum[0])
         tmp1 = @mm.mult(@mm.mult(@array_of_delta_w[layer + 1], @array_of_delta_w[layer + 1]), (1.0 - @momentum[0]))
         @array_of_s_delta_w[layer] = @mm.add(tmp0, tmp1)
-        tmp3 = @mm.div(@array_of_delta_w[layer + 1], @array_of_s_delta_w[layer])
+        tmp3 = @mm.div(@array_of_delta_w[layer + 1], @mm.matrix_sqrt(@array_of_s_delta_w[layer]))
         @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(tmp3, @learning_rate))
 
         tmp0 = @mm.mult(@array_of_s_delta_b[layer], @momentum[0])
         tmp1 = @mm.mult(@array_of_delta_b[layer + 1], (1.0 - @momentum[0]))
         @array_of_s_delta_b[layer] = @mm.add(tmp0, tmp1)
-        tmp3 = @mm.div(@array_of_delta_b[layer + 1], @array_of_s_delta_b[layer])
+        tmp3 = @mm.div(@array_of_delta_b[layer + 1], @mm.vector_sqrt(@array_of_s_delta_b[layer]))
         @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(tmp3, @learning_rate))
 
         layer -= 1
       end
     elsif @optimizer == 'Adam'
       layer = @array_of_weights.size - 1
-      while layer > 0
+      while layer >= 0
         tmp0 = @mm.mult(@array_of_v_delta_w[layer], @momentum[0])
         tmp1 = @mm.mult(@array_of_delta_w[layer + 1], (1.0 - @momentum[0]))
         @array_of_v_delta_w[layer] = @mm.add(tmp0, tmp1)
@@ -377,7 +377,7 @@ class NN
         tmp0 = @mm.mult(@array_of_s_delta_w[layer], @momentum[1])
         tmp1 = @mm.mult(@mm.mult(@array_of_delta_w[layer + 1], @array_of_delta_w[layer + 1]), (1.0 - @momentum[1]))
         @array_of_s_delta_w[layer] = @mm.add(tmp0, tmp1)
-        tmp3 = @mm.div(@array_of_v_delta_w[layer], @array_of_s_delta_w[layer])
+        tmp3 = @mm.div(@array_of_v_delta_w[layer], @mm.matrix_sqrt(@array_of_s_delta_w[layer]))
 
         @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(tmp3, @learning_rate))
 
@@ -388,7 +388,7 @@ class NN
         tmp0 = @mm.mult(@array_of_s_delta_b[layer], @momentum[1])
         tmp1 = @mm.mult(@array_of_delta_b[layer + 1], (1.0 - @momentum[1]))
         @array_of_s_delta_b[layer] = @mm.add(tmp0, tmp1)
-        tmp3 = @mm.div(@array_of_v_delta_b[layer], @array_of_s_delta_b[layer])
+        tmp3 = @mm.div(@array_of_v_delta_b[layer], @mm.vector_sqrt(@array_of_s_delta_b[layer]))
 
         @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(tmp3, @learning_rate))
 

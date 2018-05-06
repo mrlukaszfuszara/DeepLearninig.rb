@@ -19,7 +19,7 @@ class Main
     nn.add_nn(8, 'leaky_relu')
     nn.add_nn(16, 'leaky_relu', 0.8)
     nn.add_nn(16, 'leaky_relu', 0.8)
-    #nn.add_nn(32, 'leaky_relu', 0.8)
+    nn.add_nn(32, 'leaky_relu', 0.8)
     nn.add_nn(1, 'leaky_relu')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     tmp = nn.fit(data_x, data_y, batch_size, epochs, dev_data)
@@ -86,9 +86,9 @@ dev_set_x = n.z_score(dev_set_x)
 dev_set_x = n.min_max_scaler(dev_set_x)
 
 epochs = 10
-optimizer = 'RMSprop'
+optimizer = 'Adam'
 cost_function = 'mse'
-learning_rate = 0.0000001
+learning_rate = 0.000000000001
 regularization_l2 = nil
 iterations = 200
 decay_rate = 10
