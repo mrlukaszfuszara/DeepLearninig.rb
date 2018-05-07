@@ -15,7 +15,7 @@ require './lib/nn/nn'
 class Main
   def train(data_x, data_y, batch_size, epochs, dev_data, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     nn = NN.new
-    nn.input(data_x[0].size, 'leaky_relu')
+    nn.input(data_x[0].size, 'nil')
     nn.add_nn(8, 'leaky_relu')
     nn.add_nn(16, 'leaky_relu', 0.8)
     nn.add_nn(16, 'leaky_relu', 0.8)
@@ -85,13 +85,13 @@ train_set_x = n.min_max_scaler(train_set_x)
 dev_set_x = n.z_score(dev_set_x)
 dev_set_x = n.min_max_scaler(dev_set_x)
 
-epochs = 10
+epochs = 100
 optimizer = 'Adam'
 cost_function = 'mse'
 learning_rate = 0.000000000001
 regularization_l2 = nil
-iterations = 200
-decay_rate = 10
+iterations = 30
+decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
 ind = [train_set_y.min, train_set_y.max]
 

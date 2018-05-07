@@ -33,6 +33,11 @@ class NN
     @momentum = momentum
     @regularization_l2 = regularization_l2
 
+    @array_of_delta_a = []
+    @array_of_delta_w = []
+    @array_of_delta_b = []
+    create_delta_arrays
+
     i = 0
     while i < @array_of_layers.size - 1
       @array_of_bias << create_bias(i)
@@ -69,6 +74,7 @@ class NN
 
       mini_batch_samples = 0
       while mini_batch_samples < train_data_x.size
+
         @tac = Time.new
         
         time << ((epochs * train_data_x.size) - (counter)) * (@tac - @toc) * (@tac - @tic) * 1_000_000 * (1.0 / (@toc - @tic)) if mini_batch_samples > 0
@@ -82,6 +88,14 @@ class NN
         end
 
         counter += 1
+
+        create_layers(train_data_x)
+        i = 0
+        while i < @iterations
+          back_propagation(train_data_x[mini_batch_samples], train_data_y[mini_batch_samples], mini_batch_samples, batch_size)
+          update_weights
+          i += 1
+        end
         create_layers(train_data_x)
 
         if clear
@@ -99,17 +113,6 @@ class NN
         end
 
         apply_dropout
-
-        create_delta_arrays
-
-        i = 0
-        while i < @iterations
-          @array_of_delta_w = []
-          @array_of_delta_b = []
-          back_propagation(train_data_x[mini_batch_samples], train_data_y[mini_batch_samples], mini_batch_samples, batch_size)
-          update_weights
-          i += 1
-        end
 
         if !acc_str.nil?
           puts str + ', acc: ' + acc_str + '%'
@@ -236,8 +239,8 @@ class NN
     @array_of_s_delta_b = []
     layer = 0
     while layer < @array_of_layers.size - 1
-      @array_of_v_delta_w[layer] = @g.zero_matrix(@array_of_layers[layer], @array_of_layers[layer + 1])
-      @array_of_s_delta_w[layer] = @g.zero_matrix(@array_of_layers[layer], @array_of_layers[layer + 1])
+      @array_of_v_delta_w[layer] = @g.one_matrix(@array_of_layers[layer], @array_of_layers[layer + 1])
+      @array_of_s_delta_w[layer] = @g.one_matrix(@array_of_layers[layer], @array_of_layers[layer + 1])
       layer += 1
     end
     layer = 0
@@ -277,50 +280,52 @@ class NN
   end
 
   def back_propagation(data_x, data_y, tim, bs)
-    @delta_a = []
     layer = @array_of_layers.size - 1
     while layer >= 0
       if @cost_function == 'mse'
         if layer == @array_of_layers.size - 1
-          @delta_a[layer] = @mm.subt(@array_of_a[layer - 1][tim], [data_y].transpose)
+          @array_of_delta_a[layer] = @mm.subt(@array_of_a[layer - 1][tim], [data_y].transpose)
         elsif layer.zero?
-          w_dot_d = @mm.dot(@delta_a[layer + 1], @array_of_weights[layer].transpose)
+          w_dot_d = @mm.dot(@array_of_delta_a[layer + 1], @array_of_weights[layer].transpose)
           deriv = apply_deriv(data_x, nil, @array_of_activations[layer + 1])
-          @delta_a[layer] = @mm.mult(w_dot_d, deriv)
+          @array_of_delta_a[layer] = @mm.mult(w_dot_d, deriv)
         elsif layer > 0
-          w_dot_d = @mm.dot(@delta_a[layer + 1], @array_of_weights[layer].transpose)
+          w_dot_d = @mm.dot(@array_of_delta_a[layer + 1], @array_of_weights[layer].transpose)
           deriv = apply_deriv(@array_of_z[layer - 1][tim], nil, @array_of_activations[layer + 1])
-          @delta_a[layer] = @mm.mult(w_dot_d, deriv)
+          @array_of_delta_a[layer] = @mm.mult(w_dot_d, deriv)
         end
       elsif @cost_function == 'log_loss'
-      #  if layer == @array_of_layers.size - 1
-      #    @delta_a[mini_batch_sample] << @mm.subt(@array_of_a[layer - 1][mini_batch_sample], data_y)
-      #    @delta_z = delta_a.pop
-      #    delta_a.unshift @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
-      #  else
-      #    delta_z = @mm.mult(delta_a.pop, apply_deriv(@array_of_z[layer - 1][mini_batch_sample], nil, @array_of_activations[layer]))
-      #    delta_a.unshift @mm.dot(delta_z, @array_of_weights[layer - 1].transpose)
-      #  end
+        if layer == @array_of_layers.size - 1
+          @array_of_delta_a[layer] = @mm.subt(@array_of_a[layer - 1][tim], [data_y].transpose)
+        elsif layer.zero?
+          w_dot_d = @mm.dot(@array_of_delta_a[layer + 1], @array_of_weights[layer].transpose)
+          deriv = apply_deriv(data_x, nil, @array_of_activations[layer + 1])
+          @array_of_delta_a[layer] = @mm.mult(w_dot_d, deriv)
+        elsif layer > 0
+          w_dot_d = @mm.dot(@array_of_delta_a[layer + 1], @array_of_weights[layer].transpose)
+          deriv = apply_deriv(@array_of_z[layer - 1][tim], nil, @array_of_activations[layer + 1])
+          @array_of_delta_a[layer] = @mm.mult(w_dot_d, deriv)
+        end
       end
       if !@regularization_l2.nil?
         if layer != 1
-          delta = @mm.dot(@array_of_a[layer - 2][tim].transpose, @delta_a[layer])
+          delta = @mm.dot(@array_of_a[layer - 2][tim].transpose, @array_of_delta_a[layer])
           @array_of_delta_w[layer] = @mm.mult(@mm.mult(delta, (1.0 / bs)), (@regularization_l2 / bs))
-          @array_of_delta_b[layer] = @mm.mult(@mm.mult(@mm.horizontal_sum(@delta_a[layer]), (1.0 / bs)), (@regularization_l2 / bs))
+          @array_of_delta_b[layer] = @mm.mult(@mm.mult(@mm.horizontal_sum(@array_of_delta_a[layer]), (1.0 / bs)), (@regularization_l2 / bs))
         else
-          delta = @mm.dot(data_x.transpose, @delta_a[layer])
+          delta = @mm.dot(data_x.transpose, @array_of_delta_a[layer])
           @array_of_delta_w[layer] = @mm.mult(@mm.mult(delta, (1.0 / bs)), (@regularization_l2 / bs))
-          @array_of_delta_b[layer] = @mm.mult(@mm.mult(@mm.horizontal_sum(@delta_a[layer]), (1.0 / bs)), (@regularization_l2 / bs))
+          @array_of_delta_b[layer] = @mm.mult(@mm.mult(@mm.horizontal_sum(@array_of_delta_a[layer]), (1.0 / bs)), (@regularization_l2 / bs))
         end
       else
         if layer != 1
-          delta = @mm.dot(@array_of_a[layer - 2][tim].transpose, @delta_a[layer])
+          delta = @mm.dot(@array_of_a[layer - 2][tim].transpose, @array_of_delta_a[layer])
           @array_of_delta_w[layer] = @mm.mult(delta, (1.0 / bs))
-          @array_of_delta_b[layer] = @mm.mult(@mm.horizontal_sum(@delta_a[layer]), (1.0 / bs))
+          @array_of_delta_b[layer] = @mm.mult(@mm.horizontal_sum(@array_of_delta_a[layer]), (1.0 / bs))
         else
-          delta = @mm.dot(data_x.transpose, @delta_a[layer])
+          delta = @mm.dot(data_x.transpose, @array_of_delta_a[layer])
           @array_of_delta_w[layer] = @mm.mult(delta, (1.0 / bs))
-          @array_of_delta_b[layer] = @mm.mult(@mm.horizontal_sum(@delta_a[layer]), (1.0 / bs))
+          @array_of_delta_b[layer] = @mm.mult(@mm.horizontal_sum(@array_of_delta_a[layer]), (1.0 / bs))
         end
       end
       layer -= 1
@@ -478,7 +483,9 @@ class NN
   end
 
   def apply_deriv(layer, hat, activation)
-    if activation == 'relu'
+    if activation == 'nil'
+      tmp = layer
+    elsif activation == 'relu'
       tmp = @a.relu_d(layer)
     elsif activation == 'leaky_relu'
       tmp = @a.leaky_relu_d(layer)
