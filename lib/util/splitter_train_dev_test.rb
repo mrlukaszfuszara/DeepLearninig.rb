@@ -1,4 +1,4 @@
-class SpliterTDT
+class SpliterTrainDevTest
   attr_reader :train_s, :dev_s, :test_s
 
   def initialize(data_x, data_y, train_size = 0.6, dev_size = 0.2, test_size = 0.2)

@@ -1,4 +1,4 @@
-class SplitterMB
+class SplitterMiniBatch
   attr_reader :data_x, :data_y
 
   def initialize(mini_batch_size, data_x, data_y)

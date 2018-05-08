@@ -33,7 +33,6 @@ class NN
     @momentum = momentum
     @regularization_l2 = regularization_l2
 
-    @array_of_delta_a = []
     @array_of_delta_w = []
     @array_of_delta_b = []
     create_delta_arrays
@@ -51,12 +50,12 @@ class NN
   end
 
   def fit(train_data_x, train_data_y, batch_size, epochs, dev_data = nil)
-    smb = SplitterMB.new(batch_size, train_data_x, train_data_y)
+    smb = SplitterMiniBatch.new(batch_size, train_data_x, train_data_y)
     train_data_x = smb.data_x
     train_data_y = smb.data_y
 
     if !dev_data.nil?
-      smb = SplitterMB.new(batch_size, dev_data[0], dev_data[1])
+      smb = SplitterMiniBatch.new(batch_size, dev_data[0], dev_data[1])
       dev_data_x = smb.data_x
       dev_data_y = smb.data_y
       ind = dev_data[2]
@@ -74,6 +73,7 @@ class NN
 
       mini_batch_samples = 0
       while mini_batch_samples < train_data_x.size
+        counter += 1
 
         @tac = Time.new
         
@@ -87,49 +87,35 @@ class NN
           clear = true
         end
 
-        counter += 1
-
-        create_layers(train_data_x)
+        create_layers(train_data_x[mini_batch_samples])
+        apply_dropout
         i = 0
         while i < @iterations
-          back_propagation(train_data_x[mini_batch_samples], train_data_y[mini_batch_samples], mini_batch_samples, batch_size)
+          back_propagation(train_data_x[mini_batch_samples], train_data_y[mini_batch_samples])
           update_weights
           i += 1
         end
-        create_layers(train_data_x)
+        create_layers(train_data_x[mini_batch_samples])
 
         if clear
           str = 'Epoch: ' + (t + 1).to_s + ', iter: ' + (counter * @iterations).to_s + ', of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
-            apply_cost(@array_of_a.last[mini_batch_samples], train_data_y[mini_batch_samples]).to_s + ', ends: ' + '~' + ' minutes'
+            apply_cost(@array_of_a.last, train_data_y[mini_batch_samples]).to_s + ', ends: ' + '~' + ' minutes'
         else
           str = 'Epoch: ' + (t + 1).to_s + ', iter: ' + (counter * @iterations).to_s + ', of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
-            apply_cost(@array_of_a.last[mini_batch_samples], train_data_y[mini_batch_samples]).to_s + ', ends: ' + clock.to_s + ' minutes'
+            apply_cost(@array_of_a.last, train_data_y[mini_batch_samples]).to_s + ', ends: ' + clock.to_s + ' minutes'
         end
 
-        acc_str = nil
-        if !dev_data.nil?
-          prec = apply_precision(@array_of_a.last, dev_data_y, ind)
-          acc_str = (prec * 100).round(2).to_s
-        end
-
-        apply_dropout
-
-        if !acc_str.nil?
-          puts str + ', acc: ' + acc_str + '%'
-        else
-          puts str
-        end
+        puts str
 
         windows_size = IO.console.winsize[1].to_f
 
         max_val = (epochs * train_data_x.size * @iterations).to_f
-        current_val = (counter * @iterations).to_f
+        current_val = (counter).to_f
+        pg_bar = current_val / max_val
 
-        percent = current_val / max_val
-
-        pg_bar =  100 * percent / windows_size
-
-        puts '[' + '#' * (pg_bar * 100).floor + '*' * (100 - pg_bar * 100).floor + '] ' + (pg_bar * 100).floor.to_s + '%'
+        if pg_bar < 1.0
+          puts '[' + '#' * (pg_bar * windows_size).floor + '*' * (windows_size - (pg_bar * windows_size + 20)).floor + '] ' + (pg_bar * 100).floor.to_s + '%'
+        end
 
         @toc = Time.new
         mini_batch_samples += 1
@@ -139,20 +125,17 @@ class NN
   end
 
   def predict(dev_data_x, dev_data_y, batch_size, ind)
-    smb = SplitterMB.new(batch_size, dev_data_x, dev_data_y)
+    smb = SplitterMiniBatch.new(batch_size, dev_data_x, dev_data_y)
     dev_data_x = smb.data_x
     dev_data_y = smb.data_y
 
     @samples = dev_data_x.size
 
-    @array_of_a = []
-    @array_of_z = []
+    create_layers(dev_data_x.first)
 
-    create_layers(dev_data_x)
+    precision = apply_cost(@array_of_a.last, dev_data_y.first)
 
-    prec = apply_precision(@array_of_a.last, dev_data_y, ind)
-
-    puts 'Accurency: ' + (prec * 100).round(2).to_s + '%'
+    puts 'Error: ' + (precision * 100).round(2).to_s + '%'
   end
 
   def save_weights(path)
@@ -190,6 +173,8 @@ class NN
     @iterations = tmp[6]
     @momentum = tmp[8]
     @regularization_l2 = tmp[9]
+
+    @features = nodes.first.size
     
     i = 0
     while i < layers
@@ -201,7 +186,7 @@ class NN
   private
 
   def create_weights(counter)
-    @mm.mult(@g.random_matrix(@array_of_layers[counter], @array_of_layers[counter + 1], 0.0..0.01), Math.sqrt(2.0 / @features)) #/
+    @mm.mult(@g.random_matrix(@array_of_layers[counter], @array_of_layers[counter + 1], 0.0..0.1), Math.sqrt(2.0 / @array_of_layers[counter])) #/
   end
 
   def create_bias(counter)
@@ -214,20 +199,12 @@ class NN
 
     layer = 0
     while layer < @array_of_layers.size - 1
-      @array_of_z[layer] = []
-      @array_of_a[layer] = []
-      mini_batch_samples = 0
-      while mini_batch_samples < data_x.size
-        @array_of_z[layer][mini_batch_samples] = []
-        @array_of_a[layer][mini_batch_samples] = []
-        if layer.zero?
-          @array_of_z[layer][mini_batch_samples] = @mm.add(@mm.dot(data_x[mini_batch_samples], @array_of_weights[layer]), @array_of_bias[layer])
-        else
-          @array_of_z[layer][mini_batch_samples] = @mm.add(@mm.dot(@array_of_a[layer - 1][mini_batch_samples], @array_of_weights[layer]), @array_of_bias[layer])
-        end
-        @array_of_a[layer][mini_batch_samples] = apply_activ(@array_of_z[layer][mini_batch_samples], @array_of_activations[layer + 1])
-        mini_batch_samples += 1
+      if layer.zero?
+        @array_of_z[layer] = @mm.add(@mm.dot(data_x, @array_of_weights[layer]), @array_of_bias[layer])
+      else
+        @array_of_z[layer] = @mm.add(@mm.dot(@array_of_a[layer - 1], @array_of_weights[layer]), @array_of_bias[layer])
       end
+      @array_of_a[layer] = apply_activ(@array_of_z[layer], @array_of_activations[layer])
       layer += 1
     end
   end
@@ -254,79 +231,62 @@ class NN
   def apply_dropout
     layer = 0
     while layer < @array_of_layers.size - 1
-      samples = 0
-      while samples < @array_of_a[layer].size
-        array_of_dropouts_final = []
-        array_of_random_values = @g.random_matrix(@array_of_a[layer][samples].size, @array_of_a[layer][samples][0].size, 0.0..1.0)
-        mini_batch_samples = 0
-        while mini_batch_samples < @array_of_a[layer][0].size
-          array_of_dropouts_final[mini_batch_samples] = []
-          nodes = 0
-          while nodes < @array_of_a[layer][0][0].size
-            if array_of_random_values[mini_batch_samples][nodes] <= @array_of_dropouts[layer]
-              array_of_dropouts_final[mini_batch_samples][nodes] = 1.0
-            else
-              array_of_dropouts_final[mini_batch_samples][nodes] = 0.0
-            end
-            nodes += 1
+      array_of_dropouts_final = []
+      array_of_random_values = @g.random_matrix(@array_of_a[layer].size, @array_of_a[layer][0].size, 0.0..1.0)
+      sample = 0
+      while sample < @array_of_a[layer].size
+        array_of_dropouts_final[sample] = []
+        nodes = 0
+        while nodes < @array_of_a[layer][sample].size
+          if array_of_random_values[sample][nodes] > @array_of_dropouts[layer]
+            array_of_dropouts_final[sample][nodes] = 0.0
+          else
+            array_of_dropouts_final[sample][nodes] = 1.0
           end
-          mini_batch_samples += 1
+          nodes += 1
         end
-        @array_of_a[layer][samples] = @mm.mult(@mm.mult(@array_of_a[layer][samples], array_of_dropouts_final), (1.0 / @array_of_dropouts[layer])) #/
-        samples += 1
+        sample += 1
       end
+      @array_of_a[layer] = @mm.mult(@mm.mult(@array_of_a[layer], array_of_dropouts_final), (1.0 / @array_of_dropouts[layer])) #/
       layer += 1
     end
   end
 
-  def back_propagation(data_x, data_y, tim, bs)
-    layer = @array_of_layers.size - 1
+  def back_propagation(data_x, data_y)
+    layer = @array_of_a.size - 1
     while layer >= 0
       if @cost_function == 'mse'
-        if layer == @array_of_layers.size - 1
-          @array_of_delta_a[layer] = @mm.subt(@array_of_a[layer - 1][tim], [data_y].transpose)
-        elsif layer.zero?
-          w_dot_d = @mm.dot(@array_of_delta_a[layer + 1], @array_of_weights[layer].transpose)
-          deriv = apply_deriv(data_x, nil, @array_of_activations[layer + 1])
-          @array_of_delta_a[layer] = @mm.mult(w_dot_d, deriv)
+        if layer == @array_of_a.size - 1
+          delta_z = @mm.subt(@array_of_a[layer], [data_y].transpose)
+          delta_w = @mm.dot(@array_of_a[layer - 1].transpose, delta_z)
         elsif layer > 0
-          w_dot_d = @mm.dot(@array_of_delta_a[layer + 1], @array_of_weights[layer].transpose)
-          deriv = apply_deriv(@array_of_z[layer - 1][tim], nil, @array_of_activations[layer + 1])
-          @array_of_delta_a[layer] = @mm.mult(w_dot_d, deriv)
+          w_dot_d = @mm.dot(delta_z, @array_of_weights[layer + 1].transpose)
+          deriv = apply_deriv(@array_of_a[layer], nil, @array_of_activations[layer])
+          delta_z = @mm.mult(w_dot_d, deriv)
+          delta_w = @mm.dot(@array_of_a[layer - 1].transpose, delta_z)
+        elsif layer.zero?
+          w_dot_d = @mm.dot(delta_z, @array_of_weights[layer + 1].transpose)
+          deriv = apply_deriv(@array_of_a[layer], nil, @array_of_activations[layer])
+          delta_z = @mm.mult(w_dot_d, deriv)
+          delta_w = @mm.dot(data_x.transpose, delta_z)
         end
       elsif @cost_function == 'log_loss'
         if layer == @array_of_layers.size - 1
-          @array_of_delta_a[layer] = @mm.subt(@array_of_a[layer - 1][tim], [data_y].transpose)
-        elsif layer.zero?
-          w_dot_d = @mm.dot(@array_of_delta_a[layer + 1], @array_of_weights[layer].transpose)
-          deriv = apply_deriv(data_x, nil, @array_of_activations[layer + 1])
-          @array_of_delta_a[layer] = @mm.mult(w_dot_d, deriv)
-        elsif layer > 0
-          w_dot_d = @mm.dot(@array_of_delta_a[layer + 1], @array_of_weights[layer].transpose)
-          deriv = apply_deriv(@array_of_z[layer - 1][tim], nil, @array_of_activations[layer + 1])
-          @array_of_delta_a[layer] = @mm.mult(w_dot_d, deriv)
+          delta_z = @mm.subt(@array_of_a[layer - 1], [data_y].transpose)
+          delta_w = @mm.dot(@array_of_a[layer - 2].transpose, delta_z)
+        else
+          w_dot_d = @mm.dot(delta_z, @array_of_weights[layer].transpose)
+          deriv = apply_deriv(@array_of_a[layer - 1].transpose, nil, @array_of_activations[layer])
+          delta_z = @mm.mult(w_dot_d, deriv.transpose)
+          delta_w = @mm.dot(@array_of_a[layer - 2].transpose, delta_z)
         end
       end
       if !@regularization_l2.nil?
-        if layer != 1
-          delta = @mm.dot(@array_of_a[layer - 2][tim].transpose, @array_of_delta_a[layer])
-          @array_of_delta_w[layer] = @mm.mult(@mm.mult(delta, (1.0 / bs)), (@regularization_l2 / bs))
-          @array_of_delta_b[layer] = @mm.mult(@mm.mult(@mm.horizontal_sum(@array_of_delta_a[layer]), (1.0 / bs)), (@regularization_l2 / bs))
-        else
-          delta = @mm.dot(data_x.transpose, @array_of_delta_a[layer])
-          @array_of_delta_w[layer] = @mm.mult(@mm.mult(delta, (1.0 / bs)), (@regularization_l2 / bs))
-          @array_of_delta_b[layer] = @mm.mult(@mm.mult(@mm.horizontal_sum(@array_of_delta_a[layer]), (1.0 / bs)), (@regularization_l2 / bs))
-        end
+        @array_of_delta_w[layer] = @mm.mult(@mm.mult(delta_w, (1.0 / data_x.size)), (@regularization_l2 / data_x.size))
+        @array_of_delta_b[layer] = @mm.mult(@mm.mult(@mm.horizontal_sum(delta_w), (1.0 / data_x.size)), (@regularization_l2 / data_x.size))
       else
-        if layer != 1
-          delta = @mm.dot(@array_of_a[layer - 2][tim].transpose, @array_of_delta_a[layer])
-          @array_of_delta_w[layer] = @mm.mult(delta, (1.0 / bs))
-          @array_of_delta_b[layer] = @mm.mult(@mm.horizontal_sum(@array_of_delta_a[layer]), (1.0 / bs))
-        else
-          delta = @mm.dot(data_x.transpose, @array_of_delta_a[layer])
-          @array_of_delta_w[layer] = @mm.mult(delta, (1.0 / bs))
-          @array_of_delta_b[layer] = @mm.mult(@mm.horizontal_sum(@array_of_delta_a[layer]), (1.0 / bs))
-        end
+        @array_of_delta_w[layer] = @mm.mult(delta_w, (1.0 / data_x.size))
+        @array_of_delta_b[layer] = @mm.mult(@mm.horizontal_sum(delta_w), (1.0 / data_x.size))
       end
       layer -= 1
     end
@@ -336,20 +296,20 @@ class NN
     if @optimizer == 'BGD'
       layer = @array_of_weights.size - 1
       while layer >= 0
-        @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(@array_of_delta_w[layer + 1], @learning_rate))
-        @array_of_bias[layer] = @mm.subt(@array_of_bias[layer], @mm.mult(@array_of_delta_b[layer + 1], @learning_rate))
+        @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(@array_of_delta_w[layer], @learning_rate))
+        @array_of_bias[layer] = @mm.subt(@array_of_bias[layer], @mm.mult(@array_of_delta_b[layer], @learning_rate))
         layer -= 1
       end
     elsif @optimizer == 'BGDwM'
       layer = @array_of_weights.size - 1
       while layer >= 0
         tmp0 = @mm.mult(@array_of_v_delta_w[layer], @momentum[0])
-        tmp1 = @mm.mult(@array_of_delta_w[layer + 1], (1.0 - @momentum[0]))
+        tmp1 = @mm.mult(@array_of_delta_w[layer], (1.0 - @momentum[0]))
         @array_of_v_delta_w[layer] = @mm.add(tmp0, tmp1)
         @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(@array_of_v_delta_w[layer], @learning_rate))
 
         tmp0 = @mm.mult(@array_of_v_delta_b[layer], @momentum[0])
-        tmp1 = @mm.mult(@array_of_delta_b[layer + 1], (1.0 - @momentum[0]))
+        tmp1 = @mm.mult(@array_of_delta_b[layer], (1.0 - @momentum[0]))
         @array_of_v_delta_b[layer] = @mm.add(tmp0, tmp1)
         @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(@array_of_v_delta_b[layer], @learning_rate))
 
@@ -359,15 +319,15 @@ class NN
       layer = @array_of_weights.size - 1
       while layer >= 0
         tmp0 = @mm.mult(@array_of_s_delta_w[layer], @momentum[0])
-        tmp1 = @mm.mult(@mm.mult(@array_of_delta_w[layer + 1], @array_of_delta_w[layer + 1]), (1.0 - @momentum[0]))
+        tmp1 = @mm.mult(@mm.mult(@array_of_delta_w[layer], @array_of_delta_w[layer]), (1.0 - @momentum[0]))
         @array_of_s_delta_w[layer] = @mm.add(tmp0, tmp1)
-        tmp3 = @mm.div(@array_of_delta_w[layer + 1], @mm.matrix_sqrt(@array_of_s_delta_w[layer]))
+        tmp3 = @mm.div(@array_of_delta_w[layer], @mm.matrix_sqrt(@array_of_s_delta_w[layer]))
         @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(tmp3, @learning_rate))
 
         tmp0 = @mm.mult(@array_of_s_delta_b[layer], @momentum[0])
-        tmp1 = @mm.mult(@array_of_delta_b[layer + 1], (1.0 - @momentum[0]))
+        tmp1 = @mm.mult(@array_of_delta_b[layer], (1.0 - @momentum[0]))
         @array_of_s_delta_b[layer] = @mm.add(tmp0, tmp1)
-        tmp3 = @mm.div(@array_of_delta_b[layer + 1], @mm.vector_sqrt(@array_of_s_delta_b[layer]))
+        tmp3 = @mm.div(@array_of_delta_b[layer], @mm.vector_sqrt(@array_of_s_delta_b[layer]))
         @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(tmp3, @learning_rate))
 
         layer -= 1
@@ -376,22 +336,22 @@ class NN
       layer = @array_of_weights.size - 1
       while layer >= 0
         tmp0 = @mm.mult(@array_of_v_delta_w[layer], @momentum[0])
-        tmp1 = @mm.mult(@array_of_delta_w[layer + 1], (1.0 - @momentum[0]))
+        tmp1 = @mm.mult(@array_of_delta_w[layer], (1.0 - @momentum[0]))
         @array_of_v_delta_w[layer] = @mm.add(tmp0, tmp1)
 
         tmp0 = @mm.mult(@array_of_s_delta_w[layer], @momentum[1])
-        tmp1 = @mm.mult(@mm.mult(@array_of_delta_w[layer + 1], @array_of_delta_w[layer + 1]), (1.0 - @momentum[1]))
+        tmp1 = @mm.mult(@mm.mult(@array_of_delta_w[layer], @array_of_delta_w[layer]), (1.0 - @momentum[1]))
         @array_of_s_delta_w[layer] = @mm.add(tmp0, tmp1)
         tmp3 = @mm.div(@array_of_v_delta_w[layer], @mm.matrix_sqrt(@array_of_s_delta_w[layer]))
 
         @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(tmp3, @learning_rate))
 
         tmp0 = @mm.mult(@array_of_v_delta_b[layer], @momentum[0])
-        tmp1 = @mm.mult(@array_of_delta_b[layer + 1], (1.0 - @momentum[0]))
+        tmp1 = @mm.mult(@array_of_delta_b[layer], (1.0 - @momentum[0]))
         @array_of_v_delta_b[layer] = @mm.add(tmp0, tmp1)
 
         tmp0 = @mm.mult(@array_of_s_delta_b[layer], @momentum[1])
-        tmp1 = @mm.mult(@array_of_delta_b[layer + 1], (1.0 - @momentum[1]))
+        tmp1 = @mm.mult(@array_of_delta_b[layer], (1.0 - @momentum[1]))
         @array_of_s_delta_b[layer] = @mm.add(tmp0, tmp1)
         tmp3 = @mm.div(@array_of_v_delta_b[layer], @mm.vector_sqrt(@array_of_s_delta_b[layer]))
 
@@ -400,51 +360,6 @@ class NN
         layer -= 1
       end
     end
-  end
-
-  def apply_precision(last_layer, dev_data_y, ind)
-    prec = 0
-    mini_batch = 0
-    while mini_batch < dev_data_y.size - 1
-      sample = 0
-      while sample < dev_data_y[mini_batch].size - 1
-        if @array_of_activations.last != 'softmax'
-          check = dev_data_y[mini_batch][sample] - last_layer[mini_batch][sample][0]
-          min_max_scale = 0
-          while min_max_scale < ind[1] - ind[0]
-            if check < 0.5 && check > -0.5 && dev_data_y[mini_batch][sample] == ind[0] + min_max_scale
-              prec += 1
-            end
-            min_max_scale += 1
-          end
-        else
-          subt = @mm.subt(dev_data_y[mini_batch][sample], last_layer[mini_batch][sample])
-          max_val = 0
-          max_index = 0
-          one_hot = 0
-          while one_hot < dev_data_y[mini_batch][sample].size
-            if subt[one_hot] > max_val
-              max_val = subt[one_hot]
-              max_index = one_hot
-            end
-            one_hot += 1
-          end
-          check = max_val
-          one_hot = 0
-          while one_hot < dev_data_y[mini_batch][sample].size
-            if check <= 1.0 && check > 0.75 && max_index == one_hot
-              prec += 1
-            end
-            one_hot += 1
-          end
-        end
-        sample += 1
-      end
-      mini_batch += 1
-    end
-    tmp = prec.to_f / (dev_data_y.size * dev_data_y[0].size * dev_data_y[0][0].size) if @array_of_activations.last == 'softmax'
-    tmp = prec.to_f / (dev_data_y.size * dev_data_y[0].size) if @array_of_activations.last != 'softmax'
-    tmp
   end
 
   def apply_cost(last_layer, data_y)

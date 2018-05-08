@@ -1,11 +1,11 @@
 class MatrixMath
-  def matrix_dim(array)
+  def dim(array)
     s0 = array.size
     s1 = array[0].size
-    [s0, s1]
+    p [s0, s1]
   end
 
-  def matrix_size_of_elements(array)
+  def matrix_size(array)
     arr = []
     i = 0
     while i < array.size

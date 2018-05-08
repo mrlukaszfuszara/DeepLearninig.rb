@@ -1,8 +1,8 @@
 require 'io/console'
 require 'csv'
 
-require './lib/util/splitter_tdt'
-require './lib/util/splitter_mb'
+require './lib/util/splitter_train_dev_test'
+require './lib/util/splitter_mini_batch'
 require './lib/util/normalization'
 
 require './lib/util/matrix_math'
@@ -15,11 +15,9 @@ require './lib/nn/nn'
 class Main
   def train(data_x, data_y, batch_size, epochs, dev_data, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     nn = NN.new
-    nn.input(data_x[0].size, 'nil')
-    nn.add_nn(8, 'leaky_relu')
-    nn.add_nn(16, 'leaky_relu', 0.8)
-    nn.add_nn(16, 'leaky_relu', 0.8)
-    nn.add_nn(32, 'leaky_relu', 0.8)
+    nn.input(data_x[0].size, 'leaky_relu')
+    nn.add_nn(32, 'leaky_relu')
+    nn.add_nn(64, 'leaky_relu')
     nn.add_nn(1, 'leaky_relu')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     tmp = nn.fit(data_x, data_y, batch_size, epochs, dev_data)
@@ -29,7 +27,7 @@ class Main
   end
 
   def predict(data_x, data_y, batch_size, index_of_parameter)
-    nn = NN.new(data_x[0].size)
+    nn = NN.new
     nn.load_architecture('./arch.msh')
     nn.load_weights('./weights.msh')
     nn.predict(data_x, data_y, batch_size, index_of_parameter)
@@ -61,7 +59,7 @@ end
 #gen = Generators.new
 #data_y = gen.one_hot_vector(data_y)
 
-stdt = SpliterTDT.new(data_x, data_y)
+stdt = SpliterTrainDevTest.new(data_x, data_y)
 train_set = stdt.train_s
 dev_set = stdt.dev_s
 test_set = stdt.test_s
@@ -85,12 +83,16 @@ train_set_x = n.min_max_scaler(train_set_x)
 dev_set_x = n.z_score(dev_set_x)
 dev_set_x = n.min_max_scaler(dev_set_x)
 
-epochs = 100
+#n = Normalization.new
+#train_set_y = n.min_max_scaler(train_set_y)
+#dev_set_y = n.min_max_scaler(dev_set_y)
+
+epochs = 4
 optimizer = 'Adam'
 cost_function = 'mse'
-learning_rate = 0.000000000001
-regularization_l2 = nil
-iterations = 30
+learning_rate = 0.0000000000001
+regularization_l2 = 0.001
+iterations = 40
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
 ind = [train_set_y.min, train_set_y.max]
@@ -98,4 +100,4 @@ ind = [train_set_y.min, train_set_y.max]
 main = Main.new
 main.train(train_set_x, train_set_y, batch_size, epochs, [dev_set_x, dev_set_y, ind], cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
 
-main.predict(test_set_y, test_set_y, batch_size, ind)
+main.predict(test_set_x, test_set_y, batch_size, ind)

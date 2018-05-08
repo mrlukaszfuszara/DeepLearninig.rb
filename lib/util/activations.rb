@@ -3,33 +3,6 @@ class Activations
     @mm = MatrixMath.new
   end
 
-  def softmax(vector)
-    v = matrix_check(vector)
-    if v == 2
-      tmp = @mm.matrix_exp(vector)
-      tmp = @mm.div(tmp, vector[0].size)
-    elsif v == 1
-      tmp = @mm.vector_exp(vector)
-      tmp = @mm.div(tmp, vector[0].size)
-    end
-    tmp
-  end
-
-  def softmax_d(vector_y_hat, vector_y)
-    array = []
-    v = matrix_check(vector_y)
-    if v == 2
-      i = 0
-      while i < vector_y.size
-        array[i] = @mm.subt(vector_y_hat[i], vector_y[i])
-        i += 1
-      end
-    elsif v == 1
-      array = @mm.subt(vector_y_hat, vector_y)
-    end
-    array
-  end
-
   def sigmoid(vector)
     array = []
     v = matrix_check(vector)

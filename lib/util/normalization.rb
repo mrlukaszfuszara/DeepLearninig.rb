@@ -28,26 +28,54 @@ class Normalization
   end
 
   def min_max_scaler(matrix)
-    matrix = matrix.transpose
-    min_val = []
-    max_val = []
-    i = 0
-    while i < matrix.size
-      min_val[i] = matrix[i].min
-      max_val[i] = matrix[i].max
-      i += 1
-    end
-    array = []
-    i = 0
-    while i < matrix.size
-      array[i] = []
-      j = 0
-      while j < matrix[i].size
-        array[i][j] = (matrix[i][j] - min_val[i]) / (max_val[i] - min_val[i])
-        j += 1
+    logic = matrix_check(matrix)
+    if logic == 2
+      matrix = matrix.transpose
+      min_val = []
+      max_val = []
+      i = 0
+      while i < matrix.size
+        min_val[i] = matrix[i].min
+        max_val[i] = matrix[i].max
+        i += 1
       end
-      i += 1
+      array = []
+      i = 0
+      while i < matrix.size
+        array[i] = []
+        j = 0
+        while j < matrix[i].size
+          array[i][j] = (matrix[i][j] - min_val[i]) / (max_val[i] - min_val[i])
+          j += 1
+        end
+        i += 1
+      end
+      tmp = array.transpose
+    elsif logic == 1
+      min_val = matrix.min
+      max_val = matrix.max
+      array = []
+      i = 0
+      while i < matrix.size
+        array[i] = (matrix[i] - min_val) / (max_val - min_val)
+        i += 1
+      end
+      tmp = array
     end
-    array.transpose
+    tmp
+  end
+
+  def matrix_check(variable)
+    logic = nil
+    if variable.class == Array
+      if variable.all? { |e| e.class == Array }
+        logic = 2
+      else
+        logic = 1
+      end
+    else
+      logic = 0
+    end
+    logic
   end
 end
