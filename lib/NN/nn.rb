@@ -73,8 +73,6 @@ class NN
 
       mini_batch_samples = 0
       while mini_batch_samples < train_data_x.size
-        counter += 1
-
         @tac = Time.new
         
         time << ((epochs * train_data_x.size) - (counter)) * (@tac - @toc) * (@tac - @tic) * 1_000_000 * (1.0 / (@toc - @tic)) if mini_batch_samples > 0
@@ -107,15 +105,16 @@ class NN
 
         puts str
 
-        windows_size = IO.console.winsize[1].to_f
+        windows_size = IO.console.winsize[1].to_f - 20.0
 
-        max_val = (epochs * train_data_x.size * @iterations).to_f
+        counter += 1
+
+        max_val = (epochs * train_data_x.size).to_f
         current_val = (counter).to_f
         pg_bar = current_val / max_val
 
-        if pg_bar < 1.0
-          puts '[' + '#' * (pg_bar * windows_size).floor + '*' * (windows_size - (pg_bar * windows_size + 20)).floor + '] ' + (pg_bar * 100).floor.to_s + '%'
-        end
+        puts '[' + '#' * (pg_bar * windows_size).floor + '*' * (windows_size - (pg_bar * windows_size)).floor + '] ' + (100 * pg_bar).floor.to_s + '%'
+
 
         @toc = Time.new
         mini_batch_samples += 1

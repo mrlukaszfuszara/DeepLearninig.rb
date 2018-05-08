@@ -87,11 +87,11 @@ dev_set_x = n.min_max_scaler(dev_set_x)
 #train_set_y = n.min_max_scaler(train_set_y)
 #dev_set_y = n.min_max_scaler(dev_set_y)
 
-epochs = 4
+epochs = 5
 optimizer = 'Adam'
 cost_function = 'mse'
 learning_rate = 0.0000000000001
-regularization_l2 = 0.001
+regularization_l2 = nil
 iterations = 40
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
