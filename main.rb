@@ -18,7 +18,7 @@ class Main
     nn.input(data_x[0].size, 'nil')
     nn.add_nn(32, 'leaky_relu', 0.7)
     nn.add_nn(64, 'leaky_relu', 0.7)
-    nn.add_nn(1, 'sigmoid')
+    nn.add_nn(1, 'leaky_relu')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     tmp = nn.fit(data_x, data_y, batch_size, epochs, dev_data)
     nn.save_weights('./weights.msh')
@@ -83,13 +83,11 @@ train_set_x = n.min_max_scaler(train_set_x)
 dev_set_x = n.z_score(dev_set_x)
 dev_set_x = n.min_max_scaler(dev_set_x)
 
-n = Normalization.new
-train_set_y = n.min_max_scaler(train_set_y)
-dev_set_y = n.min_max_scaler(dev_set_y)
+dev_set_x = n.min_max_scaler(test_set_x)
 
 epochs = 5
 optimizer = 'Adam'
-cost_function = 'crossentropy'
+cost_function = 'mse'
 learning_rate = 0.0000000000001
 regularization_l2 = nil
 iterations = 40

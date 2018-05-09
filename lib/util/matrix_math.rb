@@ -49,7 +49,7 @@ class MatrixMath
       array[i] = []
       j = 0
       while j < matrix[i].size
-        array[i][j] = Math.sqrt(matrix[i][j])
+        array[i][j] = Math.sqrt(matrix[i][j].abs)
         j += 1
       end
       i += 1
@@ -61,7 +61,11 @@ class MatrixMath
     array = []
     i = 0
     while i < vector.size
-      array[i] = Math.sqrt(vector[i])
+      if vector[i] >= 0
+        array[i] = Math.sqrt(vector[i].abs)
+      else
+        array[i] = 10**-8
+      end
       i += 1
     end
     array
