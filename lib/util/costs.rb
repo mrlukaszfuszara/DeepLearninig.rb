@@ -17,13 +17,13 @@ class Costs
     i = 0
     while i < tmp.size
       if !lambd.nil?
-        tmp[i] = 0.5 * tmp[i] / data_y_hat.size + (lambd / (2.0 * data_y.size) * norm)
+        tmp[i] = 0.5 * tmp[i] / data_y_hat[i].size + (lambd / (2.0 * data_y.size) * norm)
       else
-        tmp[i] = 0.5 * tmp[i] / data_y_hat.size
+        tmp[i] = 0.5 * tmp[i] / data_y_hat[i].size
       end
       i += 1
     end
-    tmp
+    tmp.inject(:+) / data_y_hat.size
   end
 
   def crossentropy_cost(data_y_hat, data_y, lambd = nil, norm = nil)
@@ -40,13 +40,13 @@ class Costs
     i = 0
     while i < tmp.size
       if !lambd.nil?
-        tmp[i] = -1.0 * tmp[i] / data_y_hat.size + (lambd / (2.0 * data_y.size) * norm)
+        tmp[i] = -1.0 * tmp[i] / data_y_hat[i].size + (lambd / (2.0 * data_y.size) * norm)
       else
-        tmp[i] = -1.0 * tmp[i] / data_y_hat.size
+        tmp[i] = -1.0 * tmp[i] / data_y_hat[i].size
       end
       i += 1
     end
-    tmp
+    tmp.inject(:+) / data_y_hat.size
   end
 
   private
