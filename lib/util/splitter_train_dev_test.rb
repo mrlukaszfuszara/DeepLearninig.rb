@@ -37,4 +37,11 @@ class SpliterTrainDevTest
       i += 1
     end
   end
+
+  def one_class_y(data_y)
+    if !data_y.all? { |e| e.class == Array }
+      data_y = [data_y].transpose
+    end
+    data_y
+  end
 end

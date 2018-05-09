@@ -18,7 +18,7 @@ class Main
     nn.input(data_x[0].size, 'nil')
     nn.add_nn(32, 'leaky_relu', 0.7)
     nn.add_nn(64, 'leaky_relu', 0.7)
-    nn.add_nn(1, 'leaky_relu')
+    nn.add_nn(6, 'softmax')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     tmp = nn.fit(data_x, data_y, batch_size, epochs, dev_data)
     nn.save_weights('./weights.msh')
@@ -56,8 +56,8 @@ while i < tmp.size
   i += 1
 end
 
-#gen = Generators.new
-#data_y = gen.one_hot_vector(data_y)
+gen = Generators.new
+data_y = gen.one_hot_vector(data_y)
 
 stdt = SpliterTrainDevTest.new(data_x, data_y)
 train_set = stdt.train_s
@@ -65,14 +65,14 @@ dev_set = stdt.dev_s
 test_set = stdt.test_s
 
 train_set_x = train_set[0]
-train_set_y = train_set[1]
+train_set_y = stdt.one_class_y(train_set[1])
 
 batch_size = 64
 
 dev_set_x = dev_set[0]
-dev_set_y = dev_set[1]
+dev_set_y = stdt.one_class_y(dev_set[1])
 test_set_x = test_set[0]
-test_set_y = test_set[1]
+test_set_y = stdt.one_class_y(test_set[1])
 
 n = Normalization.new
 n.calculate(train_set_x)
@@ -87,7 +87,7 @@ test_set_x = n.min_max_scaler(test_set_x)
 
 epochs = 5
 optimizer = 'Adam'
-cost_function = 'mse'
+cost_function = 'crossentropy'
 learning_rate = 0.0000000000001
 regularization_l2 = nil
 iterations = 40
@@ -96,6 +96,6 @@ momentum = [0.9, 0.999, 10**-8]
 ind = [train_set_y.min, train_set_y.max]
 
 main = Main.new
-#main.train(train_set_x, train_set_y, batch_size, epochs, [dev_set_x, dev_set_y, ind], cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
+main.train(train_set_x, train_set_y, batch_size, epochs, [dev_set_x, dev_set_y, ind], cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
 
 main.predict(test_set_x, test_set_y, batch_size, ind)

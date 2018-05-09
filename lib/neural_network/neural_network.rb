@@ -54,13 +54,6 @@ class NeuralNetwork
     train_data_x = smb.data_x
     train_data_y = smb.data_y
 
-    if !dev_data.nil?
-      smb = SplitterMiniBatch.new(batch_size, dev_data[0], dev_data[1])
-      dev_data_x = smb.data_x
-      dev_data_y = smb.data_y
-      ind = dev_data[2]
-    end
-
     @samples = train_data_x.size
 
     @tic = Time.new
@@ -255,11 +248,11 @@ class NeuralNetwork
     layer = @array_of_a.size - 1
     while layer >= 0
       if layer == @array_of_a.size - 1 && @cost_function == 'mse'
-        delta_z = @mm.subt(@array_of_a[layer], [data_y].transpose)
+        delta_z = @mm.subt(@array_of_a[layer], data_y)
         delta_w = @mm.dot(@array_of_a[layer - 1].transpose, delta_z)
       elsif layer == @array_of_a.size - 1 && @cost_function == 'crossentropy'
-        tmp1 = @mm.mult(@mm.div([data_y].transpose, @array_of_a[layer]), -1.0)
-        tmp2 = @mm.subt([data_y].transpose, -1.0)
+        tmp1 = @mm.mult(@mm.div(data_y, @array_of_a[layer]), -1.0)
+        tmp2 = @mm.subt(data_y, -1.0)
         tmp3 = @mm.matrix_ln(@mm.subt(@array_of_a[layer], -1.0))
         tmp4 = @mm.mult(tmp2, tmp3)
         delta_z = @mm.mult(@mm.add(tmp1, tmp4), -1.0)

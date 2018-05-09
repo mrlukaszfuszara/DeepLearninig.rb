@@ -3,6 +3,92 @@ class Activations
     @mm = MatrixMath.new
   end
 
+  def softmax(vector)
+    array_t = []
+    array_sum = []
+    array = []
+    v = matrix_check(vector)
+    if v == 2
+      i = 0
+      while i < vector.size
+        array_t[i] = []
+        array_sum[i] = 0 
+        j = 0
+        while j < vector[i].size
+          array_t[i][j] = Math.log(vector[i][j])
+          j += 1
+        end
+        array_sum[i] = array_t[i].inject(:+)
+        i += 1
+      end
+      i = 0
+      while i < vector.size
+        array[i] = []
+        j = 0
+        while j < vector[i].size
+          array[i][j] = array_t[i][j] / array_sum[i]
+          j += 1
+        end
+        i += 1
+      end
+    elsif v == 1
+      i = 0
+      while i < vector.size
+        array_t[i] = Math.log(vector[i])
+        i += 1
+      end
+      array_sum = array_t.inject(:+)
+      i = 0
+      while i < vector.size
+        array[i] = array_t[i] / array_sum
+        i += 1
+      end
+    end
+    array
+  end
+
+  def softmax_d(vector)
+    array = []
+    v = matrix_check(vector)
+    if v == 2
+      i = 0
+      while i < vector.size
+        array[i] = []
+        j = 0
+        while j < vector[i].size
+          array[j] = []
+          k = 0
+          while k < vector[i].size
+            if j == k
+              array[i][j][k] = vector[i][j] * (1.0 - vector[i][j])
+            else
+              array[i][j][k] = -1.0 * vector[i][j] * vector[i][k]
+            end
+            k += 1
+          end
+          j += 1
+        end
+        i += 1
+      end
+    elsif v == 1
+      i = 0
+      while i < vector.size
+        array[i] = []
+        j = 0
+        while j < vector.size
+          if j == k
+            array[i][j] = vector[i] * (1.0 - vector[i])
+          else
+            array[i][j] = -1.0 * vector[i] * vector[j]
+          end
+          j += 1
+        end
+        i += 1
+      end
+    end
+    p array
+  end
+
   def sigmoid(vector)
     array = []
     v = matrix_check(vector)

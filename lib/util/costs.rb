@@ -4,31 +4,47 @@ class Costs
   end
 
   def mse_cost(data_y_hat, data_y, lambd = nil, norm = nil)
-    tmp = 0
+    tmp = Array.new(data_y_hat[0].size, 0.0)
     i = 0
     while i < data_y_hat.size
-      tmp += (data_y[i] - data_y_hat[i][0])**2
+      j = 0
+      while j < data_y_hat[i].size
+        tmp[j] += (data_y[i][j] - data_y_hat[i][j])**2
+        j += 1
+      end
       i += 1
     end
-    if !lambd.nil?
-      tmp = 0.5 * tmp / data_y_hat.size + (lambd / (2.0 * data_y.size) * norm)
-    else
-      tmp = 0.5 * tmp / data_y_hat.size
+    i = 0
+    while i < tmp.size
+      if !lambd.nil?
+        tmp[i] = 0.5 * tmp[i] / data_y_hat.size + (lambd / (2.0 * data_y.size) * norm)
+      else
+        tmp[i] = 0.5 * tmp[i] / data_y_hat.size
+      end
+      i += 1
     end
     tmp
   end
 
   def crossentropy_cost(data_y_hat, data_y, lambd = nil, norm = nil)
-    tmp = 0
+    tmp = Array.new(data_y_hat[0].size, 0.0)
     i = 0
     while i < data_y_hat.size
-      tmp += (data_y[i] * Math.log(data_y_hat[i][0])) + (1.0 - data_y[i]) * Math.log(1.0 - data_y_hat[i][0])
+      j = 0
+      while j < data_y_hat[i].size
+        tmp[j] += (data_y[i][j] * Math.log(data_y_hat[i][j])) + (1.0 - data_y[i][j]) * Math.log(1.0 - data_y_hat[i][j])
+        j += 1
+      end
       i += 1
     end
-    if !lambd.nil?
-      tmp = -1.0 * tmp / data_y_hat.size + (lambd / (2.0 * data_y.size) * norm)
-    else
-      tmp = -1.0 * tmp / data_y_hat.size
+    i = 0
+    while i < tmp.size
+      if !lambd.nil?
+        tmp[i] = -1.0 * tmp[i] / data_y_hat.size + (lambd / (2.0 * data_y.size) * norm)
+      else
+        tmp[i] = -1.0 * tmp[i] / data_y_hat.size
+      end
+      i += 1
     end
     tmp
   end
