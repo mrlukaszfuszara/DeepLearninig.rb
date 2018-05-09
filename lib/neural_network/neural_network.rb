@@ -1,4 +1,4 @@
-class NN
+class NeuralNetwork
   def initialize
     @mm = MatrixMath.new
     @g = Generators.new
@@ -203,7 +203,7 @@ class NN
       else
         @array_of_z[layer] = @mm.add(@mm.dot(@array_of_a[layer - 1], @array_of_weights[layer]), @array_of_bias[layer])
       end
-      @array_of_a[layer] = apply_activ(@array_of_z[layer], @array_of_activations[layer])
+      @array_of_a[layer] = apply_activ(@array_of_z[layer], @array_of_activations[layer + 1])
       layer += 1
     end
   end
@@ -238,7 +238,7 @@ class NN
         nodes = 0
         while nodes < @array_of_a[layer][sample].size
           if array_of_random_values[sample][nodes] > @array_of_dropouts[layer]
-            array_of_dropouts_final[sample][nodes] = 0.0
+            array_of_dropouts_final[sample][nodes] = 10**-8
           else
             array_of_dropouts_final[sample][nodes] = 1.0
           end
@@ -254,31 +254,27 @@ class NN
   def back_propagation(data_x, data_y)
     layer = @array_of_a.size - 1
     while layer >= 0
-      if @cost_function == 'mse'
-        if layer == @array_of_a.size - 1
-          delta_z = @mm.subt(@array_of_a[layer], [data_y].transpose)
-          delta_w = @mm.dot(@array_of_a[layer - 1].transpose, delta_z)
-        elsif layer > 0
-          w_dot_d = @mm.dot(delta_z, @array_of_weights[layer + 1].transpose)
-          deriv = apply_deriv(@array_of_a[layer], nil, @array_of_activations[layer])
-          delta_z = @mm.mult(w_dot_d, deriv)
-          delta_w = @mm.dot(@array_of_a[layer - 1].transpose, delta_z)
-        elsif layer.zero?
-          w_dot_d = @mm.dot(delta_z, @array_of_weights[layer + 1].transpose)
-          deriv = apply_deriv(@array_of_a[layer], nil, @array_of_activations[layer])
-          delta_z = @mm.mult(w_dot_d, deriv)
-          delta_w = @mm.dot(data_x.transpose, delta_z)
-        end
-      elsif @cost_function == 'log_loss'
-        if layer == @array_of_layers.size - 1
-          delta_z = @mm.subt(@array_of_a[layer - 1], [data_y].transpose)
-          delta_w = @mm.dot(@array_of_a[layer - 2].transpose, delta_z)
-        else
-          w_dot_d = @mm.dot(delta_z, @array_of_weights[layer].transpose)
-          deriv = apply_deriv(@array_of_a[layer - 1].transpose, nil, @array_of_activations[layer])
-          delta_z = @mm.mult(w_dot_d, deriv.transpose)
-          delta_w = @mm.dot(@array_of_a[layer - 2].transpose, delta_z)
-        end
+      if layer == @array_of_a.size - 1 && @cost_function == 'mse'
+        delta_z = @mm.subt(@array_of_a[layer], [data_y].transpose)
+        delta_w = @mm.dot(@array_of_a[layer - 1].transpose, delta_z)
+      elsif layer == @array_of_a.size - 1 && @cost_function == 'crossentropy'
+        tmp1 = @mm.mult(@mm.div([data_y].transpose, @array_of_a[layer]), -1.0)
+        tmp2 = @mm.subt([data_y].transpose, -1.0)
+        tmp3 = @mm.matrix_ln(@mm.subt(@array_of_a[layer], -1.0))
+        tmp4 = @mm.mult(tmp2, tmp3)
+        delta_z = @mm.mult(@mm.add(tmp1, tmp4), -1.0)
+        delta_w = @mm.dot(@array_of_a[layer - 1].transpose, delta_z)
+      end
+      if layer != @array_of_a.size - 1 && layer > 0
+        w_dot_d = @mm.dot(delta_z, @array_of_weights[layer + 1].transpose)
+        deriv = apply_deriv(@array_of_a[layer], nil, @array_of_activations[layer])
+        delta_z = @mm.mult(w_dot_d, deriv)
+        delta_w = @mm.dot(@array_of_a[layer - 1].transpose, delta_z)
+      elsif layer.zero?
+        w_dot_d = @mm.dot(delta_z, @array_of_weights[layer + 1].transpose)
+        deriv = apply_deriv(@array_of_a[layer], nil, @array_of_activations[layer])
+        delta_z = @mm.mult(w_dot_d, deriv)
+        delta_w = @mm.dot(data_x.transpose, delta_z)
       end
       if !@regularization_l2.nil?
         @array_of_delta_w[layer] = @mm.mult(@mm.mult(delta_w, (1.0 / data_x.size)), (@regularization_l2 / data_x.size))
@@ -365,15 +361,15 @@ class NN
     tmp2 = @mm.f_norm(@array_of_weights.last)
     if @cost_function == 'mse'
       if !@regularization_l2.nil?
-        tmp1 = @c.quadratic_cost_with_r(last_layer, data_y, @regularization_l2, tmp2)
+        tmp1 = @c.mse_cost(last_layer, data_y, @regularization_l2, tmp2)
       else
-        tmp1 = @c.quadratic_cost(last_layer, data_y)
+        tmp1 = @c.mse_cost(last_layer, data_y)
       end
-    elsif @cost_function == 'log_loss'
+    elsif @cost_function == 'crossentropy'
       if !@regularization_l2.nil?
-        tmp1 = @c.log_loss_cost_with_r(last_layer, data_y, @regularization_l2, tmp2)
+        tmp1 = @c.crossentropy_cost(last_layer, data_y, @regularization_l2, tmp2)
       else
-        tmp1 = @c.log_loss_cost(last_layer, data_y)
+        tmp1 = @c.crossentropy_cost(last_layer, data_y)
       end
     end
     tmp1

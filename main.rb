@@ -10,15 +10,15 @@ require './lib/util/generators'
 require './lib/util/activations'
 require './lib/util/costs'
 
-require './lib/nn/nn'
+require './lib/neural_network/neural_network'
 
 class Main
   def train(data_x, data_y, batch_size, epochs, dev_data, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
-    nn = NN.new
-    nn.input(data_x[0].size, 'leaky_relu')
-    nn.add_nn(32, 'leaky_relu')
-    nn.add_nn(64, 'leaky_relu')
-    nn.add_nn(1, 'leaky_relu')
+    nn = NeuralNetwork.new
+    nn.input(data_x[0].size, 'nil')
+    nn.add_nn(32, 'leaky_relu', 0.7)
+    nn.add_nn(64, 'leaky_relu', 0.7)
+    nn.add_nn(1, 'sigmoid')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     tmp = nn.fit(data_x, data_y, batch_size, epochs, dev_data)
     nn.save_weights('./weights.msh')
@@ -27,7 +27,7 @@ class Main
   end
 
   def predict(data_x, data_y, batch_size, index_of_parameter)
-    nn = NN.new
+    nn = NeuralNetwork.new
     nn.load_architecture('./arch.msh')
     nn.load_weights('./weights.msh')
     nn.predict(data_x, data_y, batch_size, index_of_parameter)
@@ -83,13 +83,13 @@ train_set_x = n.min_max_scaler(train_set_x)
 dev_set_x = n.z_score(dev_set_x)
 dev_set_x = n.min_max_scaler(dev_set_x)
 
-#n = Normalization.new
-#train_set_y = n.min_max_scaler(train_set_y)
-#dev_set_y = n.min_max_scaler(dev_set_y)
+n = Normalization.new
+train_set_y = n.min_max_scaler(train_set_y)
+dev_set_y = n.min_max_scaler(dev_set_y)
 
 epochs = 5
 optimizer = 'Adam'
-cost_function = 'mse'
+cost_function = 'crossentropy'
 learning_rate = 0.0000000000001
 regularization_l2 = nil
 iterations = 40

@@ -49,11 +49,7 @@ class MatrixMath
       array[i] = []
       j = 0
       while j < matrix[i].size
-        if matrix[i][j] >= 0
-          array[i][j] = Math.sqrt(matrix[i][j])
-        else
-          array[i][j] = 10**-8
-        end
+        array[i][j] = Math.sqrt(matrix[i][j])
         j += 1
       end
       i += 1
@@ -65,11 +61,7 @@ class MatrixMath
     array = []
     i = 0
     while i < vector.size
-      if vector[i] >= 0
-        array[i] = Math.sqrt(vector[i])
-      else
-        array[i] = 10**-8
-      end
+      array[i] = Math.sqrt(vector[i])
       i += 1
     end
     array
@@ -105,6 +97,16 @@ class MatrixMath
     array
   end
 
+  def vector_ln(vector)
+    array = []
+    i = 0
+    while i < vector.size
+      array[i] = Math.log(vector[i])
+      i += 1
+    end
+    array
+  end
+
   def matrix_exp(matrix)
     array = []
     i = 0
@@ -115,16 +117,6 @@ class MatrixMath
         array[i][j] = Math.exp(matrix[i][j])
         j += 1
       end
-      i += 1
-    end
-    array
-  end
-
-  def vector_ln(vector)
-    array = []
-    i = 0
-    while i < vector.size
-      array[i] = Math.log(vector[i])
       i += 1
     end
     array
