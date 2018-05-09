@@ -348,7 +348,7 @@ class NeuralNetwork
         tmp0 = @mm.mult(@array_of_s_delta_b[layer], @momentum[1])
         tmp1 = @mm.mult(@array_of_delta_b[layer], (1.0 - @momentum[1]))
         @array_of_s_delta_b[layer] = @mm.add(tmp0, tmp1)
-        tmp3 = @mm.div(@array_of_v_delta_b[layer], @mm.vector_sqrt(@array_of_s_delta_b[layer]))
+        tmp3 = @mm.div(@array_of_v_delta_b[layer], @mm.vector_sqrt(@mm.add(@array_of_s_delta_b[layer], @momentum[2])))
 
         @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(tmp3, @learning_rate))
 

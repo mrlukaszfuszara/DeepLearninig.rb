@@ -83,7 +83,7 @@ train_set_x = n.min_max_scaler(train_set_x)
 dev_set_x = n.z_score(dev_set_x)
 dev_set_x = n.min_max_scaler(dev_set_x)
 
-dev_set_x = n.min_max_scaler(test_set_x)
+test_set_x = n.min_max_scaler(test_set_x)
 
 epochs = 5
 optimizer = 'Adam'
@@ -96,6 +96,6 @@ momentum = [0.9, 0.999, 10**-8]
 ind = [train_set_y.min, train_set_y.max]
 
 main = Main.new
-main.train(train_set_x, train_set_y, batch_size, epochs, [dev_set_x, dev_set_y, ind], cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
+#main.train(train_set_x, train_set_y, batch_size, epochs, [dev_set_x, dev_set_y, ind], cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
 
 main.predict(test_set_x, test_set_y, batch_size, ind)
