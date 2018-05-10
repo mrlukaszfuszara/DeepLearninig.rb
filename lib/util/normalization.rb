@@ -15,7 +15,7 @@ class Normalization
 
     @sigma = @mm.div(tmp, matrix.size)
 
-    @sd = @mm.vector_sqrt(@mm.add(@sigma, 10**-8))
+    @sd = @mm.vector_sqrt(@sigma)
   end
 
   def z_score(matrix, mean = nil, sd = nil)

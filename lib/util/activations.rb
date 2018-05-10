@@ -15,7 +15,7 @@ class Activations
         array_sum[i] = 0 
         j = 0
         while j < vector[i].size
-          array_t[i][j] = Math.log(vector[i][j])
+          array_t[i][j] = Math.exp(vector[i][j])
           j += 1
         end
         array_sum[i] = array_t[i].inject(:+)
@@ -34,7 +34,7 @@ class Activations
     elsif v == 1
       i = 0
       while i < vector.size
-        array_t[i] = Math.log(vector[i])
+        array_t[i] = Math.exp(vector[i])
         i += 1
       end
       array_sum = array_t.inject(:+)

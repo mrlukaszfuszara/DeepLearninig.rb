@@ -111,7 +111,6 @@ class NeuralNetwork
 
         puts '[' + '#' * (pg_bar * windows_size).floor + '*' * (windows_size - (pg_bar * windows_size)).floor + '] ' + (100 * pg_bar).floor.to_s + '%'
 
-
         @toc = Time.new
         mini_batch_samples += 1
       end
@@ -119,7 +118,7 @@ class NeuralNetwork
     @array_of_a.last
   end
 
-  def predict(test_data_x, test_data_y, batch_size, ind)
+  def predict(test_data_x, test_data_y, batch_size)
     tmp = VectorizeArray.new
     test_data_y = tmp.all(test_data_y)
 
@@ -184,7 +183,7 @@ class NeuralNetwork
   private
 
   def create_weights(counter)
-    @mm.mult(@g.random_matrix(@array_of_layers[counter], @array_of_layers[counter + 1], 0.0..0.1), Math.sqrt(2.0 / @array_of_layers[counter])) #/
+    @mm.mult(@g.random_matrix(@array_of_layers[counter], @array_of_layers[counter + 1], 0.0..0.01), Math.sqrt(2.0 / @array_of_layers[counter])) #/
   end
 
   def create_bias(counter)
@@ -220,8 +219,8 @@ class NeuralNetwork
     end
     layer = 0
     while layer < @array_of_layers.size - 1
-      @array_of_v_delta_b[layer] = @g.zero_vector(@array_of_layers[layer + 1])
-      @array_of_s_delta_b[layer] = @g.zero_vector(@array_of_layers[layer + 1])
+      @array_of_v_delta_b[layer] = @g.one_vector(@array_of_layers[layer + 1])
+      @array_of_s_delta_b[layer] = @g.one_vector(@array_of_layers[layer + 1])
       layer += 1
     end
   end
@@ -237,7 +236,7 @@ class NeuralNetwork
         nodes = 0
         while nodes < @array_of_a[layer][sample].size
           if array_of_random_values[sample][nodes] > @array_of_dropouts[layer]
-            array_of_dropouts_final[sample][nodes] = 10**-8
+            array_of_dropouts_final[sample][nodes] = 0.0
           else
             array_of_dropouts_final[sample][nodes] = 1.0
           end
@@ -245,7 +244,7 @@ class NeuralNetwork
         end
         sample += 1
       end
-      @array_of_a[layer] = @mm.mult(@mm.mult(@array_of_a[layer], array_of_dropouts_final), (1.0 / @array_of_dropouts[layer])) #/
+      @array_of_a[layer] = @mm.mult(@mm.mult(@array_of_a[layer], array_of_dropouts_final), (1.0 / @array_of_dropouts[layer + 1])) #/
       layer += 1
     end
   end
@@ -257,21 +256,17 @@ class NeuralNetwork
         delta_z = @mm.subt(@array_of_a[layer], data_y)
         delta_w = @mm.dot(@array_of_a[layer - 1].transpose, delta_z)
       elsif layer == @array_of_a.size - 1 && @cost_function == 'crossentropy'
-        tmp1 = @mm.mult(@mm.div(data_y, @array_of_a[layer]), -1.0)
-        tmp2 = @mm.subt(data_y, -1.0)
-        tmp3 = @mm.matrix_ln(@mm.subt(@array_of_a[layer], -1.0))
-        tmp4 = @mm.mult(tmp2, tmp3)
-        delta_z = @mm.mult(@mm.add(tmp1, tmp4), -1.0)
+        delta_z = @mm.subt(data_y, @array_of_a[layer])
         delta_w = @mm.dot(@array_of_a[layer - 1].transpose, delta_z)
       end
       if layer != @array_of_a.size - 1 && layer > 0
         w_dot_d = @mm.dot(delta_z, @array_of_weights[layer + 1].transpose)
-        deriv = apply_deriv(@array_of_a[layer], nil, @array_of_activations[layer])
+        deriv = apply_deriv(@array_of_a[layer], nil, @array_of_activations[layer + 1])
         delta_z = @mm.mult(w_dot_d, deriv)
         delta_w = @mm.dot(@array_of_a[layer - 1].transpose, delta_z)
       elsif layer.zero?
         w_dot_d = @mm.dot(delta_z, @array_of_weights[layer + 1].transpose)
-        deriv = apply_deriv(@array_of_a[layer], nil, @array_of_activations[layer])
+        deriv = apply_deriv(@array_of_a[layer], nil, @array_of_activations[layer + 1])
         delta_z = @mm.mult(w_dot_d, deriv)
         delta_w = @mm.dot(data_x.transpose, delta_z)
       end
@@ -305,7 +300,7 @@ class NeuralNetwork
         tmp0 = @mm.mult(@array_of_v_delta_b[layer], @momentum[0])
         tmp1 = @mm.mult(@array_of_delta_b[layer], (1.0 - @momentum[0]))
         @array_of_v_delta_b[layer] = @mm.add(tmp0, tmp1)
-        @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(@array_of_v_delta_b[layer], @learning_rate))
+        @array_of_bias[layer] = @mm.subt(@array_of_bias[layer], @mm.mult(@array_of_v_delta_b[layer], @learning_rate))
 
         layer -= 1
       end
@@ -322,7 +317,7 @@ class NeuralNetwork
         tmp1 = @mm.mult(@array_of_delta_b[layer], (1.0 - @momentum[0]))
         @array_of_s_delta_b[layer] = @mm.add(tmp0, tmp1)
         tmp3 = @mm.div(@array_of_delta_b[layer], @mm.vector_sqrt(@array_of_s_delta_b[layer]))
-        @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(tmp3, @learning_rate))
+        @array_of_bias[layer] = @mm.subt(@array_of_bias[layer], @mm.mult(tmp3, @learning_rate))
 
         layer -= 1
       end
@@ -349,7 +344,7 @@ class NeuralNetwork
         @array_of_s_delta_b[layer] = @mm.add(tmp0, tmp1)
         tmp3 = @mm.div(@array_of_v_delta_b[layer], @mm.vector_sqrt(@mm.add(@array_of_s_delta_b[layer], @momentum[2])))
 
-        @array_of_weights[layer] = @mm.subt(@array_of_weights[layer], @mm.mult(tmp3, @learning_rate))
+        @array_of_bias[layer] = @mm.subt(@array_of_bias[layer], @mm.mult(tmp3, @learning_rate))
 
         layer -= 1
       end

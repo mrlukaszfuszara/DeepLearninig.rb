@@ -61,11 +61,7 @@ class MatrixMath
     array = []
     i = 0
     while i < vector.size
-      if vector[i] >= 0
-        array[i] = Math.sqrt(vector[i])
-      else
-        array[i] = 10**-8
-      end
+      array[i] = Math.sqrt(vector[i])
       i += 1
     end
     array

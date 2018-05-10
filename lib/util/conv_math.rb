@@ -1,5 +1,5 @@
 class ConvMath
-  def conv2d(matrix, filter = nil, padding = 1, stride = 1)
+  def conv2d(matrix, filter, padding = 1, stride = 1)
     siz = ((matrix.size + (2.0 * padding) - filter[0].size) / stride.to_f) + 1
 
     start_size = matrix[0][0].size
