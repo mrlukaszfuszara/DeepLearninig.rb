@@ -539,32 +539,40 @@ class MatrixMath
         filter = [[[1.0, 0.0, -1.0], [1.0, 0.0, -1.0], [1.0, 0.0, -1.0]], [[1.0, 0.0, -1.0], [1.0, 0.0, -1.0], [1.0, 0.0, -1.0]], [[1.0, 0.0, -1.0], [1.0, 0.0, -1.0], [1.0, 0.0, -1.0]]]
       end
     end
+    start_size = matrix[0][0].size
     if padding
       i = 0
       while i < matrix.size
-        matrix[i].push([0.0] * matrix[0][0].size)
-        matrix[i].unshift([0.0] * matrix[0][0].size)
+        matrix[i].push([0.0] * start_size)
+        matrix[i].unshift([0.0] * start_size)
         i += 1
       end
-      matrix.push(Array.new(matrix.size, [0.0] * matrix[0][0].size))
-      matrix.unshift(Array.new(matrix.size, [0.0] * matrix[0][0].size))
+      matrix.push(Array.new(matrix.size + 2, [0.0] * start_size))
+      matrix.unshift(Array.new(matrix.size + 1, [0.0] * start_size))
+      p matrix
     end
     if filter.size.to_f % 2 != 0
+      if matrix.size % 2 == 1
+        siz = (matrix.size / 2.0).ceil
+      else
+        siz = (matrix.size / 2.0).ceil + 1
+      end
       array = []
+      tmp = []
       i = 0
-      while i <= (matrix.size / 2.0).floor
+      while i <= siz
         array[i] = []
-        tmp = []
+        tmp[i] = []
         j = 0
-        while j <= (matrix[i].size / 2.0).floor
-          tmp[i] = 0
+        while j <= siz
+          tmp[i][j] = 0
           ch = 0
           while ch < matrix[i][j].size
             k = 0
             while k < filter.size
               l = 0
               while l < filter[0].size
-                tmp[i] += (matrix[i + k][j + l][ch] * filter[k][l][ch]).floor
+                tmp[i][j] += (matrix[i + k][j + l][ch] * filter[k][l][ch]).floor
                 l += 1
               end
               k += 1
