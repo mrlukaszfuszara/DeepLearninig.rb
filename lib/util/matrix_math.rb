@@ -482,7 +482,7 @@ class MatrixMath
     array
   end
 
-  def conv2d(matrix, orient, filter = nil)
+  def conv2d(matrix, orient, padding = true, filter = nil)
     array = []
     if filter.nil?
       if orient == 'h'
@@ -491,14 +491,24 @@ class MatrixMath
         filter = [[1.0, 0.0, -1.0], [1.0, 0.0, -1.0], [1.0, 0.0, -1.0]]
       end
     end
+    if padding
+      i = 0
+      while i < matrix.size
+        matrix[i].push(0.0)
+        matrix[i].unshift(0.0)
+        i += 1
+      end
+      matrix.push(Array.new(matrix.size, 0.0))
+      matrix.unshift(Array.new(matrix.size, 0.0))
+    end
     if filter.size.to_f % 2 != 0
       array = []
       i = 0
-      while i <= (matrix.size / 2.0).ceil
+      while i <= (matrix.size / 2.0).floor
         array[i] = []
         tmp = []
         j = 0
-        while j <= (matrix[i].size / 2.0).ceil
+        while j <= (matrix[i].size / 2.0).floor
           tmp[i] = 0
           k = 0
           while k < filter.size
@@ -517,7 +527,7 @@ class MatrixMath
     else
       puts 'Conv2D: Filter size error'
     end
-    p array
+    array
   end
 
   private
