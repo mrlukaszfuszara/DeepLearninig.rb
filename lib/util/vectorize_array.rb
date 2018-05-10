@@ -1,6 +1,4 @@
 class VectorizeArray
-  attr_reader :output
-
   def all(input)
     logic = matrix_check(input)
     if logic == 1
@@ -8,7 +6,7 @@ class VectorizeArray
     elsif logic.zero?
       input = [input]
     end
-    @output = input
+    input
   end
 
   def var_only(input)
@@ -16,7 +14,7 @@ class VectorizeArray
     if logic.zero?
       input = [input]
     end
-    @output = input
+    input
   end
 
   def matrix_check(variable)

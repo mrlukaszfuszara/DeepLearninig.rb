@@ -15,10 +15,10 @@ class NeuralNetwork
 
   def input(features, activation)
     @features = features
-    add_nn(features, activation)
+    add_neuralnet(features, activation)
   end
 
-  def add_nn(batch_size, activation, dropout = 1.0)
+  def add_neuralnet(batch_size, activation, dropout = 1.0)
     @array_of_layers << batch_size
     @array_of_activations << activation
     @array_of_dropouts << dropout
@@ -51,7 +51,7 @@ class NeuralNetwork
 
   def fit(train_data_x, train_data_y, batch_size, epochs, dev_data = nil)
     tmp = VectorizeArray.new
-    train_data_y = tmp.all(train_data_y).output
+    train_data_y = tmp.all(train_data_y)
 
     smb = SplitterMiniBatch.new(batch_size, train_data_x, train_data_y)
     train_data_x = smb.data_x
@@ -121,7 +121,7 @@ class NeuralNetwork
 
   def predict(test_data_x, test_data_y, batch_size, ind)
     tmp = VectorizeArray.new
-    test_data_y = tmp.all(test_data_y).output
+    test_data_y = tmp.all(test_data_y)
 
     smb = SplitterMiniBatch.new(batch_size, test_data_x, test_data_y)
     test_data_x = smb.data_x
@@ -176,7 +176,7 @@ class NeuralNetwork
     
     i = 0
     while i < layers
-      add_nn(nodes[i].size, @array_of_activations[i], @array_of_dropouts[i])
+      add_neuralnet(nodes[i].size, @array_of_activations[i], @array_of_dropouts[i])
       i += 1
     end
   end

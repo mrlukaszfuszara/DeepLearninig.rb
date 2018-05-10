@@ -1,25 +1,30 @@
 require 'io/console'
 require 'csv'
 
+require './lib/util/image_loader'
+
 require './lib/util/splitter_train_dev_test'
 require './lib/util/splitter_mini_batch'
 require './lib/util/normalization'
 require './lib/util/vectorize_array'
 
 require './lib/util/matrix_math'
+require './lib/util/conv_math'
+
 require './lib/util/generators'
 require './lib/util/activations'
 require './lib/util/costs'
 
 require './lib/neural_network/neural_network'
+require './lib/neural_network/conv_network'
 
 class Main
   def train(data_x, data_y, batch_size, epochs, dev_data, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     nn = NeuralNetwork.new
     nn.input(data_x[0].size, 'nil')
-    nn.add_nn(32, 'leaky_relu', 0.7)
-    nn.add_nn(64, 'leaky_relu', 0.7)
-    nn.add_nn(6, 'softmax')
+    nn.add_neuralnet(32, 'leaky_relu', 0.7)
+    nn.add_neuralnet(64, 'leaky_relu', 0.7)
+    nn.add_neuralnet(6, 'softmax')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     tmp = nn.fit(data_x, data_y, batch_size, epochs, dev_data)
     nn.save_weights('./weights.msh')
