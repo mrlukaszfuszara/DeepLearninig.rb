@@ -482,64 +482,32 @@ class MatrixMath
     array
   end
 
-  def conv2d(matrix, orient, padding = true, filter = nil)
-    array = []
-    if filter.nil?
-      if orient == 'h'
-        filter = [[1.0, 1.0, 1.0], [0.0, 0.0, 0.0], [-1.0, -1.0, -1.0]]
-      elsif orient == 'v'
-        filter = [[1.0, 0.0, -1.0], [1.0, 0.0, -1.0], [1.0, 0.0, -1.0]]
-      end
-    end
-    if padding
-      i = 0
-      while i < matrix.size
-        matrix[i].push(0.0)
-        matrix[i].unshift(0.0)
-        i += 1
-      end
-      matrix.push(Array.new(matrix.size, 0.0))
-      matrix.unshift(Array.new(matrix.size, 0.0))
-    end
-    if filter.size.to_f % 2 != 0
-      array = []
-      i = 0
-      while i <= (matrix.size / 2.0).floor
-        array[i] = []
-        tmp = []
-        j = 0
-        while j <= (matrix[i].size / 2.0).floor
-          tmp[i] = 0
-          k = 0
-          while k < filter.size
-            l = 0
-            while l < filter[0].size
-              tmp[i] += (matrix[i + k][j + l] * filter[k][l]).floor
-              l += 1
-            end
-            k += 1
-          end
-          array[i][j] = tmp[i]
-          j += 1
-        end
-        i += 1
-      end
-    else
-      puts 'Conv2D: Filter size error'
-    end
-    array
-  end
+  def conv2d(matrix, padding = true, filter = nil, orient = nil)
+    require './vectorize_array'
 
-  def conv3d(matrix, orient, padding = true, filter = nil)
-    array = []
-    if filter.nil?
-      if orient == 'h'
-        filter = [[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[-1.0, -1.0, -1.0], [-1.0, -1.0, -1.0], [-1.0, -1.0, -1.0]]]
-      elsif orient == 'v'
-        filter = [[[1.0, 0.0, -1.0], [1.0, 0.0, -1.0], [1.0, 0.0, -1.0]], [[1.0, 0.0, -1.0], [1.0, 0.0, -1.0], [1.0, 0.0, -1.0]], [[1.0, 0.0, -1.0], [1.0, 0.0, -1.0], [1.0, 0.0, -1.0]]]
+    i = 0
+    while i < matrix.size
+      j = 0
+      while j < matrix[i].size
+        tmp = VectorizeArray.new
+        matrix[i][j] = tmp.var_only(matrix[i][j])
+        j += 1
       end
+      i += 1
     end
+
     start_size = matrix[0][0].size
+    if filter.nil? && orient.nil?
+      filter = [[1.0] * start_size, [0.0] * start_size, [-1.0] * start_size]
+      tmp = []
+      i = 0
+      while i < start_size
+        tmp << filter
+        i += 1
+      end
+      filter = tmp
+    end
+
     if padding
       i = 0
       while i < matrix.size
@@ -549,43 +517,36 @@ class MatrixMath
       end
       matrix.push(Array.new(matrix.size + 2, [0.0] * start_size))
       matrix.unshift(Array.new(matrix.size + 1, [0.0] * start_size))
-      p matrix
     end
-    if filter.size.to_f % 2 != 0
-      if matrix.size % 2 == 1
-        siz = (matrix.size / 2.0).ceil
-      else
-        siz = (matrix.size / 2.0).ceil + 1
-      end
-      array = []
-      tmp = []
-      i = 0
-      while i <= siz
-        array[i] = []
-        tmp[i] = []
-        j = 0
-        while j <= siz
-          tmp[i][j] = 0
-          ch = 0
-          while ch < matrix[i][j].size
-            k = 0
-            while k < filter.size
-              l = 0
-              while l < filter[0].size
-                tmp[i][j] += (matrix[i + k][j + l][ch] * filter[k][l][ch]).floor
-                l += 1
-              end
-              k += 1
+
+    siz = matrix.size - filter[0].size + 1
+
+    array = []
+    tmp = []
+    i = 0
+    while i < siz
+      array[i] = []
+      tmp[i] = []
+      j = 0
+      while j < siz
+        tmp[i][j] = 0
+        ch = 0
+        while ch < matrix[0][0].size
+          k = 0
+          while k < filter.size
+            l = 0
+            while l < filter[0].size
+              tmp[i][j] += (matrix[i + k][j + l][ch] * filter[k][l][ch]).floor
+              l += 1
             end
-            ch += 1
+            k += 1
           end
-          array[i][j] = tmp[i]
-          j += 1
+          ch += 1
         end
-        i += 1
+        array[i][j] = tmp[i]
+        j += 1
       end
-    else
-      puts 'Conv3D: Filter size error'
+      i += 1
     end
     array
   end

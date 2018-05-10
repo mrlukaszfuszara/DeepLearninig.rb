@@ -4,6 +4,7 @@ require 'csv'
 require './lib/util/splitter_train_dev_test'
 require './lib/util/splitter_mini_batch'
 require './lib/util/normalization'
+require './lib/util/vectorize_array'
 
 require './lib/util/matrix_math'
 require './lib/util/generators'
@@ -65,14 +66,14 @@ dev_set = stdt.dev_s
 test_set = stdt.test_s
 
 train_set_x = train_set[0]
-train_set_y = stdt.one_class_y(train_set[1])
+dev_set_x = dev_set[0]
+test_set_x = test_set[0]
+
+train_set_y = train_set[1]
+dev_set_y = dev_set[1]
+test_set_y = test_set[1]
 
 batch_size = 64
-
-dev_set_x = dev_set[0]
-dev_set_y = stdt.one_class_y(dev_set[1])
-test_set_x = test_set[0]
-test_set_y = stdt.one_class_y(test_set[1])
 
 n = Normalization.new
 n.calculate(train_set_x)
@@ -93,9 +94,8 @@ regularization_l2 = nil
 iterations = 40
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
-ind = [train_set_y.min, train_set_y.max]
 
 main = Main.new
-main.train(train_set_x, train_set_y, batch_size, epochs, [dev_set_x, dev_set_y, ind], cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
+main.train(train_set_x, train_set_y, batch_size, epochs, [dev_set_x, dev_set_y], cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
 
-main.predict(test_set_x, test_set_y, batch_size, ind)
+main.predict(test_set_x, test_set_y, batch_size)

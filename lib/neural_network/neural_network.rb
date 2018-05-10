@@ -50,6 +50,9 @@ class NeuralNetwork
   end
 
   def fit(train_data_x, train_data_y, batch_size, epochs, dev_data = nil)
+    tmp = VectorizeArray.new
+    train_data_y = tmp.all(train_data_y).output
+
     smb = SplitterMiniBatch.new(batch_size, train_data_x, train_data_y)
     train_data_x = smb.data_x
     train_data_y = smb.data_y
@@ -116,16 +119,19 @@ class NeuralNetwork
     @array_of_a.last
   end
 
-  def predict(dev_data_x, dev_data_y, batch_size, ind)
-    smb = SplitterMiniBatch.new(batch_size, dev_data_x, dev_data_y)
-    dev_data_x = smb.data_x
-    dev_data_y = smb.data_y
+  def predict(test_data_x, test_data_y, batch_size, ind)
+    tmp = VectorizeArray.new
+    test_data_y = tmp.all(test_data_y).output
 
-    @samples = dev_data_x.size
+    smb = SplitterMiniBatch.new(batch_size, test_data_x, test_data_y)
+    test_data_x = smb.data_x
+    test_data_y = smb.data_y
 
-    create_layers(dev_data_x.first)
+    @samples = test_data_x.size
 
-    precision = apply_cost(@array_of_a.last, dev_data_y.first)
+    create_layers(test_data_x.first)
+
+    precision = apply_cost(@array_of_a.last, test_data_y.first)
 
     puts 'Error: ' + (precision * 100).round(2).to_s + '%'
   end
