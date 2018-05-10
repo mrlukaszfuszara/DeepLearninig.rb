@@ -542,12 +542,12 @@ class MatrixMath
     if padding
       i = 0
       while i < matrix.size
-        matrix[i].push([0.0, 0.0, 0.0])
-        matrix[i].unshift([0.0, 0.0, 0.0])
+        matrix[i].push([0.0] * matrix[0][0].size)
+        matrix[i].unshift([0.0] * matrix[0][0].size)
         i += 1
       end
-      matrix.push(Array.new(matrix.size, [0.0, 0.0, 0.0]))
-      matrix.unshift(Array.new(matrix.size, [0.0, 0.0, 0.0]))
+      matrix.push(Array.new(matrix.size, [0.0] * matrix[0][0].size))
+      matrix.unshift(Array.new(matrix.size, [0.0] * matrix[0][0].size))
     end
     if filter.size.to_f % 2 != 0
       array = []
@@ -555,7 +555,6 @@ class MatrixMath
       while i <= (matrix.size / 2.0).floor
         array[i] = []
         tmp = []
-        p matrix[i]
         j = 0
         while j <= (matrix[i].size / 2.0).floor
           tmp[i] = 0
