@@ -44,7 +44,6 @@ class Costs
     else
       array = array.inject(:+) / data_y_hat.size
     end
-    array
   end
 
   private

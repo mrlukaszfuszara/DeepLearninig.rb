@@ -67,6 +67,16 @@ class MatrixMath
     array
   end
 
+  def vector_abs(vector)
+    array = []
+    i = 0
+    while i < vector.size
+      array[i] = vector[i].abs
+      i += 1
+    end
+    array
+  end
+
   def matrix_abs(matrix)
     array = []
     i = 0

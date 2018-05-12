@@ -80,6 +80,33 @@ class Generators
     array
   end
 
+  def dotzeroone_matrix(size_rows, size_cols)
+    r = Random.new
+    array = []
+    i = 0
+    while i < size_rows
+      array[i] = []
+      j = 0
+      while j < size_cols
+        array[i][j] = 0.01
+        j += 1
+      end
+      i += 1
+    end
+    array
+  end
+
+  def dotzeroone_vector(size_rows)
+    r = Random.new
+    array = []
+    i = 0
+    while i < size_rows
+      array[i] = 0.01
+      i += 1
+    end
+    array
+  end
+
   def one_hot_vector(data_y)
     min_val = data_y.min
     max_val = data_y.max

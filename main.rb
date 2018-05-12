@@ -20,6 +20,7 @@ require './lib/util/costs'
 require './lib/neural_network/neural_network'
 require './lib/neural_network/conv_network'
 
+=begin
 class ConvMain
   def train(image)
     cn = ConvNetwork.new
@@ -33,13 +34,13 @@ img = img_load.load_image(img)
 
 cn = ConvMain.new
 cn.train(img)
+=end
 
 class Main
   def train(data_x, data_y, batch_size, epochs, dev_data, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     nn = NeuralNetwork.new
-    nn.input(data_x[0].size, 'relu')
-    nn.add_neuralnet(32, 'relu', 0.7)
-    nn.add_neuralnet(64, 'relu', 0.7)
+    nn.input(data_x[0].size, 'leaky_relu')
+    nn.add_resnet(8, 4, 2, 'leaky_relu')
     nn.add_neuralnet(6, 'softmax')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     tmp = nn.fit(data_x, data_y, batch_size, epochs, dev_data)
@@ -110,7 +111,7 @@ test_set_x = n.min_max_scaler(test_set_x)
 epochs = 5
 optimizer = 'Adam'
 cost_function = 'crossentropy'
-learning_rate = 0.01
+learning_rate = 0.25
 regularization_l2 = nil
 iterations = 60
 decay_rate = 1
