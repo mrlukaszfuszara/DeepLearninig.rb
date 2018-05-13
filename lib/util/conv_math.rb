@@ -42,7 +42,7 @@ class ConvMath
           end
           m += 1
         end
-        tmp[i][j] = tmp[i][j]
+        tmp[i][j] = tmp[i][j] - [nil]
         j += stride
       end
       tmp[i] = tmp[i] - [nil]
@@ -92,6 +92,7 @@ class ConvMath
         tmp[i][j] = tmp[i][j].flatten.max
         j += stride
       end
+      tmp[i] = tmp[i] - [nil]
       i += stride
     end
     tmp - [nil]
@@ -138,6 +139,7 @@ class ConvMath
         tmp[i][j] = (tmp[i][j].flatten.inject(:+) / tmp[i][j].flatten.size.to_f).floor
         j += stride
       end
+      tmp[i] = tmp[i] - [nil]
       i += stride
     end
     tmp - [nil]

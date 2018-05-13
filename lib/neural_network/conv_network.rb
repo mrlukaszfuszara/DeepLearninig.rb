@@ -1,4 +1,6 @@
 class ConvNetwork
+  attr_reader :output
+
   def initialize
     @mm = MatrixMath.new
     @cm = ConvMath.new
@@ -13,10 +15,11 @@ class ConvNetwork
     @array_of_paddings = []
     @array_of_strides = []
     @array_of_labels = []
-    @array_of_a = []
 
     @array_of_weights = []
     @array_of_pool = []
+
+    @array_of_elements = []
   end
 
   def input(activation, channels, filter_size, padding, stride, label = nil)
@@ -54,16 +57,25 @@ class ConvNetwork
   end
 
   def return_flatten(label = nil)
+    tmp = []
     if !label.nil?
-      lbl = 0
-      while lbl < @array_of_channels.size
-        tmp = @array_of_a[@array_of_labels[lbl][1]].flatten if lbl == label
-        lbl += 1
+      element = 0
+      while element < @array_of_elements.size
+        j = 0
+        while j < @array_of_channels.size
+          tmp = @array_of_elements[element][@array_of_labels[j][1]].flatten if @array_of_labels[j][0] == label
+          j += 1
+        end
+        element += 1
       end
     else
-      tmp = @array_of_a.last.flatten
+      element = 0
+      while element < @array_of_elements.size
+        tmp << @array_of_elements[element].last.flatten
+        element += 1
+      end
     end
-    tmp
+    @output = tmp
   end
 
   def compile
@@ -81,7 +93,11 @@ class ConvNetwork
 
     element = 0
     while element < pathes.size
+      puts 'Generating ConvNet for image: ' + (element + 1).to_s + ', of: ' + pathes.size.to_s
+
       img = img_load.load_image(path + '\\' + pathes[element])
+
+      @array_of_a = []
 
       layer = 0
       while layer < @array_of_channels.size
@@ -98,7 +114,7 @@ class ConvNetwork
         end
         layer += 1
       end
-
+      @array_of_elements << @array_of_a
       element += 1
     end
   end
