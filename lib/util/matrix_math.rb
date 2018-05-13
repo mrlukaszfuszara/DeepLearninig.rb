@@ -5,16 +5,6 @@ class MatrixMath
     p [s0, s1]
   end
 
-  def matrix_size(array)
-    arr = []
-    i = 0
-    while i < array.size
-      arr << array[i].size
-      i += 1
-    end
-    arr
-  end
-
   def reverse_matrix(matrix)
     array = Array.new(matrix.size)
     i = 0

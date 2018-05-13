@@ -14,9 +14,9 @@ class NeuralNetwork
     @array_of_bias = []
   end
 
-  def input(features, activation)
-    @features = features
-    add_neuralnet(features, activation)
+  def input(batch_size, activation)
+    @features = batch_size
+    add_neuralnet(batch_size, activation)
   end
 
   def add_neuralnet(batch_size, activation, dropout = 1.0)
@@ -51,8 +51,6 @@ class NeuralNetwork
 
     @array_of_delta_w = []
     @array_of_delta_b = []
-
-    @array_of_steps << 0 if @array_of_steps.empty?
     
     create_delta_arrays
 
@@ -75,8 +73,6 @@ class NeuralNetwork
     smb = SplitterMiniBatch.new(batch_size, train_data_x, train_data_y)
     train_data_x = smb.data_x
     train_data_y = smb.data_y
-
-    @samples = train_data_x.size
 
     @tic = Time.new
 
@@ -144,8 +140,6 @@ class NeuralNetwork
     smb = SplitterMiniBatch.new(batch_size, test_data_x, test_data_y)
     test_data_x = smb.data_x
     test_data_y = smb.data_y
-
-    @samples = test_data_x.size
 
     create_layers(test_data_x.first)
 
@@ -294,7 +288,7 @@ class NeuralNetwork
     layer = @array_of_a.size - 1
     while layer >= 0
       if layer == @array_of_a.size - 1 && @cost_function == 'mse'
-        delta_z[layer] = @mm.subt(data_y, @array_of_a[layer])
+        delta_z[layer] = @mm.subt(@array_of_a[layer], data_y)
       elsif layer == @array_of_a.size - 1 && @cost_function == 'crossentropy'
         delta_z[layer] = @mm.subt(@array_of_a[layer], data_y)
       end

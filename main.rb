@@ -20,28 +20,30 @@ require './lib/util/costs'
 require './lib/neural_network/neural_network'
 require './lib/neural_network/conv_network'
 
-=begin
 class ConvMain
-  def train(image)
+  def train(images_path)
     cn = ConvNetwork.new
-    cn.input(image)
+    cn.input('leaky_relu', 5, 3, 1, 1)
+    cn.add_convnet('leaky_relu', 10, 3, 1, 2)
+    cn.add_maxpool(3, 1, 2)
+    cn.compile
+    cn.fit(images_path)
+    cn.return_flatten
   end
 end
 
-img = './dataset/0000001.png'
-img_load = ImageLoader.new
-img = img_load.load_image(img)
+img = 'C:\Users\Lukasz\Documents\Projekty\RuNNet\dataset\images'
 
 cn = ConvMain.new
 cn.train(img)
-=end
 
 class Main
   def train(data_x, data_y, batch_size, epochs, dev_data, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     nn = NeuralNetwork.new
     nn.input(data_x[0].size, 'leaky_relu')
-    nn.add_resnet(8, 4, 2, 'leaky_relu')
-    nn.add_neuralnet(6, 'softmax')
+    nn.add_neuralnet(32, 'leaky_relu', 0.7)
+    nn.add_resnet(8, 4, 8, 'leaky_relu')
+    nn.add_neuralnet(1, 'leaky_relu')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     tmp = nn.fit(data_x, data_y, batch_size, epochs, dev_data)
     nn.save_weights('./weights.msh')
@@ -79,8 +81,8 @@ while i < tmp.size
   i += 1
 end
 
-gen = Generators.new
-data_y = gen.one_hot_vector(data_y)
+#gen = Generators.new
+#data_y = gen.one_hot_vector(data_y)
 
 stdt = SpliterTrainDevTest.new(data_x, data_y)
 train_set = stdt.train_s
@@ -110,8 +112,8 @@ test_set_x = n.min_max_scaler(test_set_x)
 
 epochs = 5
 optimizer = 'Adam'
-cost_function = 'crossentropy'
-learning_rate = 0.25
+cost_function = 'mse'
+learning_rate = 0.5
 regularization_l2 = nil
 iterations = 60
 decay_rate = 1
