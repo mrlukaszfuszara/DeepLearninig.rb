@@ -154,7 +154,7 @@ class NeuralNetwork
   end
 
   def save_architecture(path)
-    serialized_array = Marshal.dump([@array_of_layers, @array_of_activations, @array_of_dropouts, @optimizer, @cost_function, @learning_rate, @decay_rate, @iterations, @momentum, @regularization_l2])
+    serialized_array = Marshal.dump([@array_of_layers, @array_of_activations, @array_of_dropouts, @array_of_steps, @optimizer, @cost_function, @learning_rate, @decay_rate, @iterations, @momentum, @regularization_l2])
     File.open(path, 'wb') { |f| f.write(serialized_array) }
   end
 
@@ -175,14 +175,15 @@ class NeuralNetwork
 
     @array_of_activations = tmp[1]
     @array_of_dropouts = tmp[2]
+    @array_of_steps = tmp[3]
 
-    @optimizer = tmp[3]
-    @cost_function = tmp[4]
-    @learning_rate = tmp[5]
-    @decay_rate = tmp[6]
-    @iterations = tmp[6]
-    @momentum = tmp[8]
-    @regularization_l2 = tmp[9]
+    @optimizer = tmp[4]
+    @cost_function = tmp[5]
+    @learning_rate = tmp[6]
+    @decay_rate = tmp[7]
+    @iterations = tmp[8]
+    @momentum = tmp[9]
+    @regularization_l2 = tmp[10]
 
     @features = nodes.first.size
     

@@ -315,6 +315,55 @@ class Activations
     array
   end
 
+  def relu_conv(volume)
+    array = []
+    i = 0
+    while i < volume.size
+      array[i] = []
+      j = 0
+      while j < volume[i].size
+        array[i][j] = []
+        k = 0
+        while k < volume[i][j].size
+          if volume[i][j][k] > 0.0
+            array[i][j][k] = volume[i][j][k]
+          else
+            array[i][j][k] = 0.0
+          end
+          k += 1
+        end
+        j += 1
+      end
+      i += 1
+    end
+    array
+  end
+
+  def leaky_relu_conv(volume)
+    array = []
+    i = 0
+    while i < volume.size
+      array[i] = []
+      j = 0
+      while j < volume[i].size
+        array[i][j] = []
+        k = 0
+        while k < volume[i][j].size
+          tmp = 0.01 * volume[i][j][k]
+          if volume[i][j][k] > tmp
+            array[i][j][k] = volume[i][j][k]
+          else
+            array[i][j][k] = tmp
+          end
+          k += 1
+        end
+        j += 1
+      end
+      i += 1
+    end
+    array
+  end
+
   private
 
   def matrix_check(variable)

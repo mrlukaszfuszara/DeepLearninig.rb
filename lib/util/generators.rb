@@ -149,4 +149,28 @@ class Generators
     end
     array
   end
+
+  def tags_to_numbers(data_y)
+    uniqe_array = []
+    i = 0
+    while i < data_y.size
+      if !uniqe_array.include?(data_y[i])
+        uniqe_array << data_y[i]
+      end
+      i += 1
+    end
+    labeled_array = []
+    i = 0
+    while i < data_y.size
+      j = 0
+      while j < uniqe_array.size
+        if data_y[i] == uniqe_array[j]
+          labeled_array << uniqe_array.index(uniqe_array[j])
+        end
+        j += 1
+      end
+      i += 1
+    end
+    labeled_array
+  end
 end

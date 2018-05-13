@@ -32,28 +32,53 @@ class Main
     cn.add_maxpool(3, 1, 2)
     cn.compile
     cn.fit(images_path)
-    cn.return_flatten
-    @img_x = cn.output
+    img_x = cn.return_flatten
+    cn.save_weights('./weights_cn.msh')
+    cn.save_architecture('./arch_cn.msh')
+    img_x
   end
-  def train_nn(batch_size, epochs, dev_data, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
-    data_y = @g.one_vector(@img_x[0].size)
-
+  def train_nn(data_x, data_y, batch_size, epochs, dev_data, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     nn = NeuralNetwork.new
-    nn.input(@img_x[0].size, 'leaky_relu')
+    nn.input(data_x[0].size, 'leaky_relu')
     nn.add_neuralnet(32, 'leaky_relu', 0.7)
     nn.add_resnet(8, 4, 8, 'leaky_relu')
-    nn.add_neuralnet(1, 'leaky_relu')
+    nn.add_neuralnet(14, 'sigmoid')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, momentum, regularization_l2)
-    tmp = nn.fit(@img_x, data_y, batch_size, epochs, dev_data)
-    nn.save_weights('./weights.msh')
-    nn.save_architecture('./arch.msh')
+    tmp = nn.fit(data_x, data_y, batch_size, epochs, dev_data)
+    nn.save_weights('./weights_nn.msh')
+    nn.save_architecture('./arch_nn.msh')
     tmp
   end
 end
 
 img = 'C:\Users\Lukasz\Documents\Projekty\RuNNet\dataset\images'
 network = Main.new
-network.train_conv(img)
+
+#img_x = network.train_conv(img)
+#output = Marshal.dump(img_x)
+#File.open('ConvNet.msh', 'wb') { |f| f.write(output) }
+
+img_x = Marshal.load File.open('ConvNet.msh', 'rb')
+
+labels = Marshal.load File.open('C:\Users\Lukasz\Documents\Projekty\RuNNet\dataset\images\sequence_of_img.msh', 'rb')
+tmp = []
+CSV.foreach('C:\Users\Lukasz\Documents\Projekty\RuNNet\dataset\images\validation-annotations-bbox.csv', { :col_sep => ',' }) do |row|
+  tmp << row
+end
+
+img_y = []
+i = 0
+while i < tmp.size
+  k = 0
+  while k < labels.size
+    img_y << tmp[i][2].to_s if labels[k] == (tmp[i][0].to_s + '.png')
+    k += 1
+  end
+  i += 1
+end
+
+@g = Generators.new
+img_y = @g.one_hot_vector(@g.tags_to_numbers(img_y))
 
 epochs = 5
 optimizer = 'Adam'
@@ -64,7 +89,7 @@ iterations = 60
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
 batch_size = 3
-network.train_nn(batch_size, epochs, nil, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
+network.train_nn(img_x, img_y, batch_size, epochs, nil, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
 
 =begin
 class Main
