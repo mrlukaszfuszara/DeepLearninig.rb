@@ -93,8 +93,8 @@ class ConvNetwork
     element = 0
     while element < pathes.size
       @tac = Time.new
-      time << (epochs * train_data_x.size - counter) / (@tac - @toc).to_f if mini_batch_samples > 0
-      clock = (time.inject(:+) / time.size / 1_000_000.0 / 60.0).round(2) if mini_batch_samples > 1
+      time << pathes.size / (@tac - @toc).to_f * element if mini_batch_samples > 0
+      clock = (time.inject(:+) / time.size / 10_000.0 / 60.0).round(2) if mini_batch_samples > 1
       clear = false
       if time.size % 20 == 0 || element == 1
         time.shift(time.size / 2)

@@ -50,16 +50,25 @@ class Main
     nn.save_architecture('./weights/arch_nn.msh')
     tmp
   end
+
+  def predict_conv(images_path)
+
+  end
+
+  def predict_nn(data_x, data_y, batch_size)
+    nn = NeuralNetwork.new
+    nn.load_architecture('./weights/arch_nn.msh')
+    nn.load_weights('./weights/weights_nn.msh')
+    nn.predict(data_x, data_y, batch_size)
+  end
 end
 
-=begin
-img = '.\dataset\images'
-network = Main.new
+#img = '.\dataset\images'
+#network = Main.new
 
-img_x = network.train_conv(img)
-output = Marshal.dump(img_x)
-File.open('ConvNet.msh', 'wb') { |f| f.write(output) }
-=end
+#img_x = network.train_conv(img)
+#output = Marshal.dump(img_x)
+#File.open('ConvNet.msh', 'wb') { |f| f.write(output) }
 
 img_x = Marshal.load File.open('ConvNet.msh', 'rb')
 
@@ -85,17 +94,20 @@ while i < files.size
 end
 
 @g = Generators.new
-img_y = @g.one_hot_vector(@g.tags_to_numbers(img_y))
+img_y = @g.tags_to_numbers(img_y)
+img_y = @g.one_hot_vector(img_y)
 
 network = Main.new
-epochs = 5
+epochs = 12
 optimizer = 'Adam'
-cost_function = 'mse'
-learning_rate = 0.5
+cost_function = 'crossentropy'
+learning_rate = 0.25
 regularization_l2 = nil
 iterations = 60
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
-batch_size = 3
+batch_size = 10
 network.train_nn(img_x, img_y, batch_size, epochs, nil, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
 
+network = Main.new
+network.predict_nn(img_x, img_y, 10)

@@ -86,7 +86,7 @@ class NeuralNetwork
       while mini_batch_samples < train_data_x.size
         @tac = Time.new
 
-        time << (epochs * train_data_x.size - counter) / (@tac - @toc).to_f if mini_batch_samples > 0
+        time << (epochs * train_data_x.size) / (@tac - @toc).to_f * (epochs * train_data_x.size - t * mini_batch_samples) if mini_batch_samples > 0
 
         clock = (time.inject(:+) / time.size / 1_000_000.0 / 60.0).round(2) if mini_batch_samples > 1
 
@@ -139,13 +139,11 @@ class NeuralNetwork
 
     smb = SplitterMiniBatch.new(batch_size, test_data_x, test_data_y)
     test_data_x = smb.data_x
-    test_data_y = smb.data_y
 
-    create_layers(test_data_x.first)
+    create_layers(test_data_x.last)
 
-    precision = apply_cost(@array_of_a.last, test_data_y.first)
-
-    puts 'Error: ' + (precision * 100).round(2).to_s + '%'
+    p test_data_y[0]
+    p @array_of_a.last
   end
 
   def save_weights(path)
@@ -291,7 +289,7 @@ class NeuralNetwork
       if layer == @array_of_a.size - 1 && @cost_function == 'mse'
         delta_z[layer] = @mm.subt(@array_of_a[layer], data_y)
       elsif layer == @array_of_a.size - 1 && @cost_function == 'crossentropy'
-        delta_z[layer] = @mm.subt(@array_of_a[layer], data_y)
+        delta_z[layer] = @mm.subt(data_y, @array_of_a[layer])
       end
       if layer != @array_of_a.size - 1 && layer > 0
         w_dot_d = @mm.dot(delta_z[layer + 1], @array_of_weights[layer + 1].transpose)
