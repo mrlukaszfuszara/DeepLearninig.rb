@@ -85,10 +85,10 @@ class NeuralNetwork
       mini_batch_samples = 0
       while mini_batch_samples < train_data_x.size
         @tac = Time.new
-        
-        time << ((epochs * train_data_x.size) - (counter)) * (@tac - @toc) * (@tac - @tic) * 1_000_000 * (1.0 / (@toc - @tic)) if mini_batch_samples > 0
 
-        clock = (time.inject(:+) / time.size / 60.0).floor if mini_batch_samples > 1
+        time << (epochs * train_data_x.size - counter) / (@tac - @toc).to_f if mini_batch_samples > 0
+
+        clock = (time.inject(:+) / time.size / 1_000_000.0 / 60.0).round(2) if mini_batch_samples > 1
 
         clear = false
         if time.size % 20 == 0 || mini_batch_samples == 1

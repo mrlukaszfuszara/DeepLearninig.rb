@@ -88,9 +88,34 @@ class ConvNetwork
 
     img_load = ImageLoader.new
 
+    time = []
+    @tic = Time.new
     element = 0
     while element < pathes.size
-      puts 'Generating ConvNet for image: ' + (element + 1).to_s + ', of: ' + pathes.size.to_s
+      @tac = Time.new
+      time << (epochs * train_data_x.size - counter) / (@tac - @toc).to_f if mini_batch_samples > 0
+      clock = (time.inject(:+) / time.size / 1_000_000.0 / 60.0).round(2) if mini_batch_samples > 1
+      clear = false
+      if time.size % 20 == 0 || element == 1
+        time.shift(time.size / 2)
+        clear = true
+      end
+
+      if clear
+        str = 'Image: ' + (element + 1).to_s + ', of: ' + pathes.size.to_s + ', ends: ' + '~' + ' minutes'
+      else
+        str = 'Image: ' + (element + 1).to_s + ', of: ' + pathes.size.to_s + ', ends: ' + clock.to_s + ' minutes'
+      end
+
+      puts str
+
+      windows_size = IO.console.winsize[1].to_f - 20.0
+
+      max_val = pathes.size.to_f
+      current_val = element.to_f
+      pg_bar = current_val / max_val
+
+      puts '[' + '#' * (pg_bar * windows_size).floor + '*' * (windows_size - (pg_bar * windows_size)).floor + '] ' + (100 * pg_bar).floor.to_s + '%'
 
       img = img_load.load_image(path + '\\' + pathes[element])
 
@@ -115,6 +140,8 @@ class ConvNetwork
         layer += 1
       end
       @array_of_elements << @array_of_a
+
+      @toc = Time.new
       element += 1
     end
   end
@@ -166,8 +193,8 @@ class ConvNetwork
     tmp = Dir.pwd
     Dir.chdir(dir_path)
     img = Dir.glob('*.png')
-    save_sequence(img) if save
     Dir.chdir(tmp)
+    save_sequence(img) if save
     img
   end
 
