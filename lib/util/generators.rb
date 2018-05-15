@@ -26,23 +26,19 @@ class Generators
     array
   end
 
-  def random_volume(height, width, channels, range)
+  def random_volume(no_filters, channels, range)
     r = Random.new
     array = []
-    i = 0
-    while i < height
-      array[i] = []
-      j = 0
-      while j < width
-        array[i][j] = []
-        k = 0
-        while k < channels
-          array[i][j][k] = r.rand(range)
-          k += 1
-        end
-        j += 1        
+    filters = 0
+    while filters < no_filters
+      array[filters] = []
+      tmp = r.rand(range)
+      k = 0
+      while k < channels
+        array[filters] = tmp
+        k += 1
       end
-      i += 1
+      filters += 1
     end
     array
   end

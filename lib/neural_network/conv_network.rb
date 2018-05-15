@@ -88,24 +88,9 @@ class ConvNetwork
 
     img_load = ImageLoader.new
 
-    time = []
-    @tic = Time.new
     element = 0
     while element < pathes.size
-      @tac = Time.new
-      time << pathes.size / (@tac - @toc).to_f * element if mini_batch_samples > 0
-      clock = (time.inject(:+) / time.size / 10_000.0 / 60.0).round(2) if mini_batch_samples > 1
-      clear = false
-      if time.size % 20 == 0 || element == 1
-        time.shift(time.size / 2)
-        clear = true
-      end
-
-      if clear
-        str = 'Image: ' + (element + 1).to_s + ', of: ' + pathes.size.to_s + ', ends: ' + '~' + ' minutes'
-      else
-        str = 'Image: ' + (element + 1).to_s + ', of: ' + pathes.size.to_s + ', ends: ' + clock.to_s + ' minutes'
-      end
+      str = 'Image: ' + (element + 1).to_s + ', of: ' + pathes.size.to_s
 
       puts str
 
@@ -133,15 +118,12 @@ class ConvNetwork
             @array_of_a[layer] = apply_activ(@array_of_z[layer], @array_of_activations[layer])
           elsif @array_of_pool[layer] == 'max'
             @array_of_a[layer] = @cm.max_pooling(@array_of_a[layer - 1], @array_of_filters[layer], @array_of_paddings[layer], @array_of_strides[layer])
-          elsif @array_of_pool[layer] == 'avg'
-            @array_of_a[layer] = @cm.average_pooling(@array_of_a[layer - 1], @array_of_filters[layer], @array_of_paddings[layer], @array_of_strides[layer])
           end
         end
         layer += 1
       end
       @array_of_elements << @array_of_a
 
-      @toc = Time.new
       element += 1
     end
   end
@@ -186,7 +168,7 @@ class ConvNetwork
   private
 
   def create_weights(i)
-    @g.random_volume(@array_of_filters[i], @array_of_filters[i], @array_of_channels[i], -1..1)
+    @g.random_volume(@array_of_channels[i], @array_of_filters[i], -1..1)
   end
 
   def generate_images_path(dir_path, save)

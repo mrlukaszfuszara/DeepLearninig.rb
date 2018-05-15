@@ -74,28 +74,11 @@ class NeuralNetwork
     train_data_x = smb.data_x
     train_data_y = smb.data_y
 
-    @tic = Time.new
-
     counter = 0
     epochs.times do |t|
       @learning_rate = @learning_rate / (1.0 + @decay_rate * t)
-
-      time = []
-
       mini_batch_samples = 0
       while mini_batch_samples < train_data_x.size
-        @tac = Time.new
-
-        time << (epochs * train_data_x.size) / (@tac - @toc).to_f * (epochs * train_data_x.size - t * mini_batch_samples) if mini_batch_samples > 0
-
-        clock = (time.inject(:+) / time.size / 1_000_000.0 / 60.0).round(2) if mini_batch_samples > 1
-
-        clear = false
-        if time.size % 20 == 0 || mini_batch_samples == 1
-          time.shift(time.size / 2)
-          clear = true
-        end
-
         create_layers(train_data_x[mini_batch_samples])
         apply_dropout
         i = 0
@@ -106,13 +89,8 @@ class NeuralNetwork
         end
         create_layers(train_data_x[mini_batch_samples])
 
-        if clear
-          str = 'Epoch: ' + (t + 1).to_s + ', iter: ' + (counter * @iterations).to_s + ', of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
-            apply_cost(@array_of_a.last, train_data_y[mini_batch_samples]).to_s + ', ends: ' + '~' + ' minutes'
-        else
-          str = 'Epoch: ' + (t + 1).to_s + ', iter: ' + (counter * @iterations).to_s + ', of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
-            apply_cost(@array_of_a.last, train_data_y[mini_batch_samples]).to_s + ', ends: ' + clock.to_s + ' minutes'
-        end
+        str = 'Epoch: ' + (t + 1).to_s + ', iter: ' + (counter * @iterations).to_s + ', of: ' + (epochs * train_data_x.size * @iterations).to_s + ', train error: ' + \
+          apply_cost(@array_of_a.last, train_data_y[mini_batch_samples]).to_s
 
         puts str
 
@@ -126,7 +104,6 @@ class NeuralNetwork
 
         puts '[' + '#' * (pg_bar * windows_size).floor + '*' * (windows_size - (pg_bar * windows_size)).floor + '] ' + (100 * pg_bar).floor.to_s + '%'
 
-        @toc = Time.new
         mini_batch_samples += 1
       end
     end
@@ -289,7 +266,7 @@ class NeuralNetwork
       if layer == @array_of_a.size - 1 && @cost_function == 'mse'
         delta_z[layer] = @mm.subt(@array_of_a[layer], data_y)
       elsif layer == @array_of_a.size - 1 && @cost_function == 'crossentropy'
-        delta_z[layer] = @mm.subt(data_y, @array_of_a[layer])
+        delta_z[layer] = @mm.subt(@array_of_a[layer], data_y)
       end
       if layer != @array_of_a.size - 1 && layer > 0
         w_dot_d = @mm.dot(delta_z[layer + 1], @array_of_weights[layer + 1].transpose)
@@ -455,7 +432,7 @@ class NeuralNetwork
     elsif activation == 'sigmoid'
       tmp = @a.sigmoid_d(layer)
     elsif activation == 'softmax'
-      tmp = @a.softmax_d(layer, hat)
+      tmp = @a.softmax_d(layer)
     end
     tmp
   end
