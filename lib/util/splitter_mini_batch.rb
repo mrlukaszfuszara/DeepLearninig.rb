@@ -17,7 +17,7 @@ class SplitterMiniBatch
       array_y << @y[i...(i + mini_batch_size)]
       i += mini_batch_size
     end
-    if array_x.last.size != @x.size
+    while @x.size % mini_batch_size != 0
       array_x.pop
       array_y.pop
     end

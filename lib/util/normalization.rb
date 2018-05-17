@@ -45,7 +45,11 @@ class Normalization
         array[i] = []
         j = 0
         while j < matrix[i].size
-          array[i][j] = (matrix[i][j] - min_val[i]) / (max_val[i] - min_val[i])
+          if (max_val[i] - min_val[i]) > 0
+            array[i][j] = (matrix[i][j] - min_val[i]) / (max_val[i] - min_val[i]).to_f
+          else
+            array[i][j] = 0.0
+          end
           j += 1
         end
         i += 1
@@ -57,7 +61,11 @@ class Normalization
       array = []
       i = 0
       while i < matrix.size
-        array[i] = (matrix[i] - min_val) / (max_val - min_val)
+        if (max_val[i] - min_val[i]) > 0
+          array[i] = (matrix[i] - min_val) / (max_val - min_val).to_f
+        else
+          array[i] = 0.0
+        end
         i += 1
       end
       tmp = array

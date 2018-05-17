@@ -1,4 +1,14 @@
 class Generators
+  def generate_images_path(dir_path, save_path)
+    tmp = Dir.pwd
+    Dir.chdir(dir_path)
+    img = Dir.glob('*.png')
+    Dir.chdir(tmp)
+    serialized_array = Marshal.dump(img)
+    File.open(save_path, 'wb') { |f| f.write(serialized_array) }
+    img
+  end
+
   def random_matrix(size_rows, size_cols, range)
     r = Random.new
     array = []
@@ -97,7 +107,7 @@ class Generators
     array
   end
 
-  def dotzeroone_matrix(size_rows, size_cols)
+  def small_matrix(size_rows, size_cols)
     r = Random.new
     array = []
     i = 0
@@ -105,7 +115,7 @@ class Generators
       array[i] = []
       j = 0
       while j < size_cols
-        array[i][j] = 0.01
+        array[i][j] = 10**-8
         j += 1
       end
       i += 1
@@ -113,12 +123,12 @@ class Generators
     array
   end
 
-  def dotzeroone_vector(size_rows)
+  def small_vector(size_rows)
     r = Random.new
     array = []
     i = 0
     while i < size_rows
-      array[i] = 0.01
+      array[i] = 10**-8
       i += 1
     end
     array

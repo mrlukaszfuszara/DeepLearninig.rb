@@ -25,14 +25,13 @@ class Main
     @g = Generators.new
   end
 
-  def train_conv(images_path)
+  def train_conv(images_path, images)
     cn = ConvNetwork.new
-    cn.input('leaky_relu', 16, 3, 1, 2)
-    cn.add_convnet('leaky_relu', 16, 3, 1, 2)
-    cn.add_maxpool(2, 0, 2)
-    cn.add_convnet('leaky_relu', 16, 3, 1, 2)
+    cn.add_convnet('leaky_relu', 6, 3, 0, 4)
+    cn.add_maxpool(3, 0, 2)
+    cn.add_convnet('leaky_relu', 8, 3, 2, 1)
     cn.compile
-    cn.fit(images_path)
+    cn.fit(images_path, images)
     img_x = cn.return_flatten
     cn.save_weights('./weights/weights_cn.msh')
     cn.save_architecture('./weights/arch_cn.msh')
@@ -40,10 +39,9 @@ class Main
   end
   def train_nn(data_x, data_y, batch_size, epochs, dev_data, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     nn = NeuralNetwork.new
-    nn.input(data_x[0].size, 'leaky_relu')
-    nn.add_neuralnet(32, 'leaky_relu', 0.7)
-    nn.add_resnet(8, 4, 8, 'leaky_relu')
-    nn.add_neuralnet(33, 'softmax')
+    nn.input(data_x[0][0].size, 'leaky_relu')
+    nn.add_neuralnet(32, 'leaky_relu')
+    nn.add_neuralnet(data_y[0][0].size, 'softmax')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, momentum, regularization_l2)
     tmp = nn.fit(data_x, data_y, batch_size, epochs, dev_data)
     nn.save_weights('./weights/weights_nn.msh')
@@ -51,7 +49,7 @@ class Main
     tmp
   end
 
-  def predict_conv(images_path)
+  def predict_conv(images_path, images)
 
   end
 
@@ -63,16 +61,19 @@ class Main
   end
 end
 
-img = '.\dataset\images'
+g = Generators.new
+
+img_x_array = g.generate_images_path('./dataset/images', './data/images.msh')
+files = Marshal.load File.open('./data/images.msh', 'rb')
+
 network = Main.new
 
-#img_x = network.train_conv(img)
-#output = Marshal.dump(img_x)
-#File.open('ConvNet.msh', 'wb') { |f| f.write(output) }
+img_x = network.train_conv('./dataset/images/', files)
+
+output = Marshal.dump(img_x)
+File.open('ConvNet.msh', 'wb') { |f| f.write(output) }
 
 img_x = Marshal.load File.open('ConvNet.msh', 'rb')
-
-files = Marshal.load File.open('./data/sequence_of_img.msh', 'rb')
 
 labels = []
 CSV.foreach('./data/validation-annotations-bbox.csv', { :col_sep => ',' }) do |row|
@@ -93,21 +94,36 @@ while i < files.size
   i += 1
 end
 
-@g = Generators.new
-img_y = @g.tags_to_numbers(img_y)
-img_y = @g.one_hot_vector(img_y)
+g = Generators.new
+img_y = g.tags_to_numbers(img_y)
+img_y = g.one_hot_vector(img_y)
+
+tmp = VectorizeArray.new
+img_y = tmp.all(img_y)
+
+batch_size = 2
+
+smb = SplitterMiniBatch.new(batch_size, img_x, img_y)
+img_x = smb.data_x
+img_y = smb.data_y
+
+n = Normalization.new
+i = 0
+while i < img_x.size
+  img_x[i] = n.min_max_scaler(img_x[i])
+  i += 1
+end
 
 network = Main.new
-epochs = 12
+epochs = 10
 optimizer = 'Adam'
 cost_function = 'crossentropy'
-learning_rate = 0.5
+learning_rate = 0.0001
 regularization_l2 = nil
-iterations = 40
+iterations = 20
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
-batch_size = 10
 network.train_nn(img_x, img_y, batch_size, epochs, nil, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum, regularization_l2)
 
 network = Main.new
-network.predict_nn(img_x, img_y, 10)
+network.predict_nn(img_x, img_y, batch_size)

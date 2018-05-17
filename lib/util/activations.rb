@@ -1,8 +1,4 @@
 class Activations
-  def initialize
-    @mm = MatrixMath.new
-  end
-
   def softmax(vector)
     array_t = []
     array_sum = []
@@ -12,10 +8,10 @@ class Activations
       i = 0
       while i < vector.size
         array_t[i] = []
-        array_sum[i] = 0 
+        array_sum[i] = 0
         j = 0
-        while j < vector[i].size
-          array_t[i][j] = Math.exp(vector[i][j])
+        while j < vector[0].size
+          array_t[i][j] = Math.exp(vector[i][j] - vector[i].max)
           j += 1
         end
         array_sum[i] = array_t[i].inject(:+)
@@ -47,48 +43,6 @@ class Activations
     array
   end
 
-  def softmax_d(vector)
-    array = []
-    v = matrix_check(vector)
-    if v == 2
-      i = 0
-      while i < vector.size
-        array[i] = []
-        j = 0
-        while j < vector[i].size
-          array[j] = []
-          k = 0
-          while k < vector[i].size
-            if j == k
-              array[i][j][k] = vector[i][j] * (1.0 - vector[i][j])
-            else
-              array[i][j][k] = -1.0 * vector[i][j] * vector[i][k]
-            end
-            k += 1
-          end
-          j += 1
-        end
-        i += 1
-      end
-    elsif v == 1
-      i = 0
-      while i < vector.size
-        array[i] = []
-        j = 0
-        while j < vector.size
-          if j == k
-            array[i][j] = vector[i] * (1.0 - vector[i])
-          else
-            array[i][j] = -1.0 * vector[i] * vector[j]
-          end
-          j += 1
-        end
-        i += 1
-      end
-    end
-    p array
-  end
-
   def sigmoid(vector)
     array = []
     v = matrix_check(vector)
@@ -97,7 +51,7 @@ class Activations
       while i < vector.size
         array[i] = []
         j = 0
-        while j < vector[i].size
+        while j < vector[0].size
           array[i][j] = 1.0 / (1.0 + Math.exp(-vector[i][j]))
           j += 1
         end
@@ -121,7 +75,7 @@ class Activations
       while i < vector.size
         array[i] = []
         j = 0
-        while j < vector[i].size
+        while j < vector[0].size
           array[i][j] = vector[i][j] * (1.0 - vector[i][j])
           j += 1
         end
@@ -145,7 +99,7 @@ class Activations
       while i < vector.size
         array[i] = []
         j = 0
-        while j < vector[i].size
+        while j < vector[0].size
           array[i][j] = (Math.exp(vector[i][j]) - Math.exp(-vector[i][j])) / (Math.exp(vector[i][j]) + Math.exp(-vector[i][j]))
           j += 1
         end
@@ -169,7 +123,7 @@ class Activations
       while i < vector.size
         array[i] = []
         j = 0
-        while j < vector[i].size
+        while j < vector[0].size
           array[i][j] = 1.0 - Math.tanh(vector[i][j])**2
           j += 1
         end
@@ -193,7 +147,7 @@ class Activations
       while i < vector.size
         array[i] = []
         j = 0
-        while j < vector[i].size
+        while j < vector[0].size
           if vector[i][j] > 0.0
             array[i][j] = vector[i][j]
           else
@@ -225,7 +179,7 @@ class Activations
       while i < vector.size
         array[i] = []
         j = 0
-        while j < vector[i].size
+        while j < vector[0].size
           if vector[i][j] > 0.0
             array[i][j] = 1.0
           else
@@ -257,7 +211,7 @@ class Activations
       while i < vector.size
         array[i] = []
         j = 0
-        while j < vector[i].size
+        while j < vector[0].size
         tmp = 0.01 * vector[i][j]
           if vector[i][j] > tmp
             array[i][j] = vector[i][j]
@@ -291,7 +245,7 @@ class Activations
       while i < vector.size
         array[i] = []
         j = 0
-        while j < vector[i].size
+        while j < vector[0].size
           if vector[i][j] > 0.0
             array[i][j] = 1.0
           else
@@ -321,7 +275,7 @@ class Activations
     while i < volume.size
       array[i] = []
       j = 0
-      while j < volume[i].size
+      while j < volume[0].size
         array[i][j] = []
         k = 0
         while k < volume[i][j].size
@@ -345,10 +299,10 @@ class Activations
     while i < volume.size
       array[i] = []
       j = 0
-      while j < volume[i].size
+      while j < volume[0].size
         array[i][j] = []
         k = 0
-        while k < volume[i][j].size
+        while k < volume[0][0].size
           tmp = 0.01 * volume[i][j][k]
           if volume[i][j][k] > tmp
             array[i][j][k] = volume[i][j][k]

@@ -5,16 +5,6 @@ class MatrixMath
     p [s0, s1]
   end
 
-  def reverse_matrix(matrix)
-    array = Array.new(matrix.size)
-    i = 0
-    while i < matrix.size
-      array[i] = matrix[-i]
-      i += 1
-    end
-    array
-  end
-
   def f_norm(matrix)
     sum = 0
     array = []
@@ -22,7 +12,7 @@ class MatrixMath
     while i < matrix.size
       array[i] = 0
       j = 0
-      while j < matrix[i].size
+      while j < matrix[0].size
         array[i] += matrix[i][j]**2
         j += 1
       end
@@ -38,7 +28,7 @@ class MatrixMath
     while i < matrix.size
       array[i] = []
       j = 0
-      while j < matrix[i].size
+      while j < matrix[0].size
         array[i][j] = Math.sqrt(matrix[i][j])
         j += 1
       end
@@ -57,26 +47,26 @@ class MatrixMath
     array
   end
 
-  def vector_abs(vector)
-    array = []
-    i = 0
-    while i < vector.size
-      array[i] = vector[i].abs
-      i += 1
-    end
-    array
-  end
-
   def matrix_abs(matrix)
     array = []
     i = 0
     while i < matrix.size
       array[i] = [0]
       j = 0
-      while j < matrix[i].size
+      while j < matrix[0].size
         array[i][j] = matrix[i][j].abs
         j += 1
       end
+      i += 1
+    end
+    array
+  end
+
+  def vector_abs(vector)
+    array = []
+    i = 0
+    while i < vector.size
+      array[i] = vector[i].abs
       i += 1
     end
     array
@@ -88,7 +78,7 @@ class MatrixMath
     while i < matrix.size
       array[i] = [0]
       j = 0
-      while j < matrix[i].size
+      while j < matrix[0].size
         array[i][j] = Math.log(matrix[i][j])
         j += 1
       end
@@ -113,7 +103,7 @@ class MatrixMath
     while i < matrix.size
       array[i] = [0]
       j = 0
-      while j < matrix[i].size
+      while j < matrix[0].size
         array[i][j] = Math.exp(matrix[i][j])
         j += 1
       end
@@ -127,6 +117,31 @@ class MatrixMath
     i = 0
     while i < vector.size
       array[i] = Math.exp(vector[i])
+      i += 1
+    end
+    array
+  end
+
+  def matrix_square(matrix)
+    array = []
+    i = 0
+    while i < matrix.size
+      array[i] = [0]
+      j = 0
+      while j < matrix[0].size
+        array[i][j] = matrix[i][j]**2
+        j += 1
+      end
+      i += 1
+    end
+    array
+  end
+
+  def vector_square(vector)
+    array = []
+    i = 0
+    while i < vector.size
+      array[i] = vector[i]**2
       i += 1
     end
     array
@@ -171,7 +186,7 @@ class MatrixMath
       while i < variable1.size
         array[i] = []
         j = 0
-        while j < variable1[i].size
+        while j < variable1[0].size
           array[i][j] = variable1[i][j] + variable2
           j += 1
         end
@@ -236,7 +251,7 @@ class MatrixMath
       while i < variable1.size
         array[i] = []
         j = 0
-        while j < variable1[i].size
+        while j < variable1[0].size
           array[i][j] = variable1[i][j] - variable2
           j += 1
         end
@@ -301,7 +316,7 @@ class MatrixMath
       while i < variable1.size
         array[i] = []
         j = 0
-        while j < variable1[i].size
+        while j < variable1[0].size
           array[i][j] = variable1[i][j] * variable2
           j += 1
         end
@@ -338,7 +353,11 @@ class MatrixMath
           array[i] = []
           j = 0
           while j < variable1[0].size
-            array[i][j] = variable1[i][j] / variable2[i][j]
+            if variable2[i][j] > 0
+              array[i][j] = variable1[i][j] / variable2[i][j]
+            else
+              array[i][j] = 0
+            end
             j += 1
           end
           i += 1
@@ -353,7 +372,11 @@ class MatrixMath
           array[i] = []
           j = 0
           while j < variable1[0].size
-            array[i][j] = variable1[i][j] / variable2[j]
+            if variable2[i] > 0
+              array[i][j] = variable1[i][j] / variable2[j]
+            else
+              array[i][j] = 0.0
+            end
             j += 1
           end
           i += 1
@@ -366,8 +389,12 @@ class MatrixMath
       while i < variable1.size
         array[i] = []
         j = 0
-        while j < variable1[i].size
-          array[i][j] = variable1[i][j] / variable2
+        while j < variable1[0].size
+          if variable2 > 0
+            array[i][j] = variable1[i][j] / variable2
+          else
+            array[i][j] = 0.0
+          end
           j += 1
         end
         i += 1
@@ -376,7 +403,11 @@ class MatrixMath
       if variable1.size == variable2.size
         i = 0
         while i < variable1.size
-          array[i] = variable1[i] / variable2[i]
+          if variable2[i] > 0
+            array[i] = variable1[i] / variable2[i]
+          else
+            array[i] = 0.0
+          end
           i += 1
         end
       else
@@ -385,7 +416,11 @@ class MatrixMath
     elsif one == 1 && two.zero?
       i = 0
       while i < variable1.size
-        array[i] = variable1[i] / variable2
+        if variable2 > 0
+          array[i] = variable1[i] / variable2
+        else
+          array[i] = 0.0
+        end
         i += 1
       end
     end
@@ -442,38 +477,6 @@ class MatrixMath
       else
         puts 'Dot Vector @ Vector: Size error'
       end
-    end
-    array
-  end
-
-  def vertical_sum(matrix)
-    array = []
-    i = 0
-    while i < matrix.size
-      array[i] = 0
-      j = 0
-      while j < matrix[i].size
-        array[i] += matrix[i][j]
-        j += 1
-      end
-      i += 1
-    end
-    array
-  end
-
-  def horizontal_sum(matrix)
-    matrix = matrix.transpose
-
-    array = []
-    i = 0
-    while i < matrix.size
-      array[i] = 0
-      j = 0
-      while j < matrix[i].size
-        array[i] += matrix[i][j]
-        j += 1
-      end
-      i += 1
     end
     array
   end

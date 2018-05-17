@@ -1,8 +1,4 @@
 class Costs
-  def initialize
-    @mm = MatrixMath.new
-  end
-
   def mse_cost(data_y_hat, data_y, lambd = nil, norm = nil)
     array = []
     i = 0
