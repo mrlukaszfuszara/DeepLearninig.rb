@@ -1,272 +1,35 @@
 class Activations
-  def softmax(vector)
-    array_t = []
-    array_sum = []
-    array = []
-    v = matrix_check(vector)
-    if v == 2
-      i = 0
-      while i < vector.size
-        array_t[i] = []
-        array_sum[i] = 0
-        j = 0
-        while j < vector[0].size
-          array_t[i][j] = Math.exp(vector[i][j] - vector[i].max)
-          j += 1
-        end
-        array_sum[i] = array_t[i].inject(:+)
-        i += 1
-      end
-      i = 0
-      while i < vector.size
-        array[i] = []
-        j = 0
-        while j < vector[i].size
-          array[i][j] = array_t[i][j] / array_sum[i]
-          j += 1
-        end
-        i += 1
-      end
-    elsif v == 1
-      i = 0
-      while i < vector.size
-        array_t[i] = Math.exp(vector[i])
-        i += 1
-      end
-      array_sum = array_t.inject(:+)
-      i = 0
-      while i < vector.size
-        array[i] = array_t[i] / array_sum
-        i += 1
-      end
-    end
-    array
+  def initialize
+    @mm = MatrixMath.new
   end
 
-  def sigmoid(vector)
-    array = []
-    v = matrix_check(vector)
-    if v == 2
-      i = 0
-      while i < vector.size
-        array[i] = []
-        j = 0
-        while j < vector[0].size
-          array[i][j] = 1.0 / (1.0 + Math.exp(-vector[i][j]))
-          j += 1
-        end
-        i += 1
-      end
-    elsif v == 1
-      i = 0
-      while i < vector.size
-        array[i] = 1.0 / (1.0 + Math.exp(-vector[i]))
-        i += 1
-      end
+  def softmax(matrix)
+    array = matrix.to_a
+    i = 0
+    while i < array.size
+      tmp0 = array[i].max
+      tmp1 = array[i].collect { |e| Math.exp(e - tmp0) }
+      tmp2 = tmp1.inject(:+)
+      array[i] = tmp1.collect { |e| e / tmp2 } 
+      i += 1
     end
-    array
+    Matrix[*array]
   end
 
-  def sigmoid_d(vector)
-    array = []
-    v = matrix_check(vector)
-    if v == 2
-      i = 0
-      while i < vector.size
-        array[i] = []
-        j = 0
-        while j < vector[0].size
-          array[i][j] = vector[i][j] * (1.0 - vector[i][j])
-          j += 1
-        end
-        i += 1
-      end
-    elsif v == 1
-      i = 0
-      while i < vector.size
-        array[i] = vector[i] * (1.0 - vector[i])
-        i += 1
-      end
-    end
-    array
+  def relu(matrix)
+    matrix.collect { |e| e > 0 ? e : 0.0 }
   end
 
-  def tanh(vector)
-    array = []
-    v = matrix_check(vector)
-    if v == 2
-      i = 0
-      while i < vector.size
-        array[i] = []
-        j = 0
-        while j < vector[0].size
-          array[i][j] = (Math.exp(vector[i][j]) - Math.exp(-vector[i][j])) / (Math.exp(vector[i][j]) + Math.exp(-vector[i][j]))
-          j += 1
-        end
-        i += 1
-      end
-    elsif v == 1
-      i = 0
-      while i < vector.size
-        array[i] = (Math.exp(vector[i]) - Math.exp(-vector[i])) / (Math.exp(vector[i]) + Math.exp(-vector[i]))
-        i += 1
-      end
-    end
-    array
+  def relu_d(matrix)
+    matrix.collect { |e| e > 0 ? 1.0 : 0.0 }
   end
 
-  def tanh_d(vector)
-    array = []
-    v = matrix_check(vector)
-    if v == 2
-      i = 0
-      while i < vector.size
-        array[i] = []
-        j = 0
-        while j < vector[0].size
-          array[i][j] = 1.0 - Math.tanh(vector[i][j])**2
-          j += 1
-        end
-        i += 1
-      end
-    elsif v == 1
-      i = 0
-      while i < vector.size
-        array[i] = 1.0 - Math.tanh(vector[i])**2
-        i += 1
-      end
-    end
-    array
+  def leaky_relu(matrix)
+    matrix.collect { |e| e * 0.01 > 0 ? e : e * 0.01 }
   end
 
-  def relu(vector)
-    array = []
-    v = matrix_check(vector)
-    if v == 2
-      i = 0
-      while i < vector.size
-        array[i] = []
-        j = 0
-        while j < vector[0].size
-          if vector[i][j] > 0.0
-            array[i][j] = vector[i][j]
-          else
-            array[i][j] = 0.0
-          end
-          j += 1
-        end
-        i += 1
-      end
-    elsif v == 1
-      i = 0
-      while i < vector.size
-        if vector[i] > 0.0
-          array[i] = vector[i]
-        else
-          array[i] = 0.0
-        end
-        i += 1
-      end
-    end
-    array
-  end
-
-  def relu_d(vector)
-    array = []
-    v = matrix_check(vector)
-    if v == 2
-      i = 0
-      while i < vector.size
-        array[i] = []
-        j = 0
-        while j < vector[0].size
-          if vector[i][j] > 0.0
-            array[i][j] = 1.0
-          else
-            array[i][j] = 0.0
-          end
-          j += 1
-        end
-        i += 1
-      end
-    elsif v == 1
-      i = 0
-      while i < vector.size
-        if vector[i] > 0.0
-          array[i] = 1.0
-        else
-          array[i] = 0.0
-        end
-        i += 1
-      end
-    end
-    array
-  end
-
-  def leaky_relu(vector)
-    array = []
-    v = matrix_check(vector)
-    if v == 2
-      i = 0
-      while i < vector.size
-        array[i] = []
-        j = 0
-        while j < vector[0].size
-        tmp = 0.01 * vector[i][j]
-          if vector[i][j] > tmp
-            array[i][j] = vector[i][j]
-          else
-            array[i][j] = tmp
-          end
-          j += 1
-        end
-        i += 1
-      end
-    elsif v == 1
-      i = 0
-      while i < vector.size
-        tmp = 0.01 * vector[i]
-        if vector[i] > tmp
-          array[i] = vector[i]
-        else
-          array[i] = tmp
-        end
-        i += 1
-      end
-    end
-    array
-  end
-
-  def leaky_relu_d(vector)
-    array = []
-    v = matrix_check(vector)
-    if v == 2
-      i = 0
-      while i < vector.size
-        array[i] = []
-        j = 0
-        while j < vector[0].size
-          if vector[i][j] > 0.0
-            array[i][j] = 1.0
-          else
-            array[i][j] = 0.01
-          end
-          j += 1
-        end
-        i += 1
-      end
-    elsif v == 1
-      i = 0
-      while i < vector.size
-        if vector[i] > 0.0
-          array[i] = 1.0
-        else
-          array[i] = 0.01
-        end
-        i += 1
-      end
-    end
-    array
+  def leaky_relu_d(matrix)
+    matrix.collect { |e| e > 0 ? 1.0 : 0.01 }
   end
 
   def relu_conv(volume)

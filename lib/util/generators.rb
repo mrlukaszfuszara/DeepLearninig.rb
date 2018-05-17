@@ -1,41 +1,4 @@
 class Generators
-  def generate_images_path(dir_path, save_path)
-    tmp = Dir.pwd
-    Dir.chdir(dir_path)
-    img = Dir.glob('*.png')
-    Dir.chdir(tmp)
-    serialized_array = Marshal.dump(img)
-    File.open(save_path, 'wb') { |f| f.write(serialized_array) }
-    img
-  end
-
-  def random_matrix(size_rows, size_cols, range)
-    r = Random.new
-    array = []
-    i = 0
-    while i < size_rows
-      array[i] = []
-      j = 0
-      while j < size_cols
-        array[i][j] = r.rand(range)
-        j += 1
-      end
-      i += 1
-    end
-    array
-  end
-
-  def random_vector(size_rows, range)
-    r = Random.new
-    array = []
-    i = 0
-    while i < size_rows
-      array[i] = r.rand(range)
-      i += 1
-    end
-    array
-  end
-
   def random_volume(no_filters, channels, range)
     r = Random.new
     array = []
@@ -53,85 +16,14 @@ class Generators
     array
   end
 
-  def zero_matrix(size_rows, size_cols)
-    r = Random.new
-    array = []
-    i = 0
-    while i < size_rows
-      array[i] = []
-      j = 0
-      while j < size_cols
-        array[i][j] = 0.0
-        j += 1
-      end
-      i += 1
-    end
-    array
-  end
-
-  def zero_vector(size_rows)
-    r = Random.new
-    array = []
-    i = 0
-    while i < size_rows
-      array[i] = 0.0
-      i += 1
-    end
-    array
-  end
-
-  def one_matrix(size_rows, size_cols)
-    r = Random.new
-    array = []
-    i = 0
-    while i < size_rows
-      array[i] = []
-      j = 0
-      while j < size_cols
-        array[i][j] = 1.0
-        j += 1
-      end
-      i += 1
-    end
-    array
-  end
-
-  def one_vector(size_rows)
-    r = Random.new
-    array = []
-    i = 0
-    while i < size_rows
-      array[i] = 1.0
-      i += 1
-    end
-    array
-  end
-
-  def small_matrix(size_rows, size_cols)
-    r = Random.new
-    array = []
-    i = 0
-    while i < size_rows
-      array[i] = []
-      j = 0
-      while j < size_cols
-        array[i][j] = 10**-8
-        j += 1
-      end
-      i += 1
-    end
-    array
-  end
-
-  def small_vector(size_rows)
-    r = Random.new
-    array = []
-    i = 0
-    while i < size_rows
-      array[i] = 10**-8
-      i += 1
-    end
-    array
+  def generate_images_path(dir_path, save_path)
+    tmp = Dir.pwd
+    Dir.chdir(dir_path)
+    img = Dir.glob('*.png')
+    Dir.chdir(tmp)
+    serialized_array = Marshal.dump(img)
+    File.open(save_path, 'wb') { |f| f.write(serialized_array) }
+    img
   end
 
   def one_hot_vector(data_y)

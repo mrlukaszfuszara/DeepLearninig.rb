@@ -1,3 +1,9 @@
+require './lib/util/conv_math'
+require './lib/util/generators'
+require './lib/util/activations'
+
+require './lib/util/image_loader'
+
 class ConvNetwork
   def initialize
     @mm = MatrixMath.new
@@ -77,16 +83,15 @@ class ConvNetwork
 
       element += 1
 
-      str = 'Image: ' + element.to_s + ', of: ' + files.size.to_s
-
-      puts str
-
       windows_size = IO.console.winsize[1].to_f - 20.0
+
+      str = 'Image: ' + element.to_s + ', of: ' + files.size.to_s + ' images'
 
       max_val = files.size.to_f
       current_val = element.to_f
       pg_bar = current_val / max_val
 
+      puts str
       puts '[' + '#' * (pg_bar * windows_size).floor + '*' * (windows_size - (pg_bar * windows_size)).floor + '] ' + (100 * pg_bar).floor.to_s + '%'
     end
   end

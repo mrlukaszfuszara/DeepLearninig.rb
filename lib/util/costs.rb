@@ -1,5 +1,7 @@
 class Costs
-  def mse_cost(data_y_hat, data_y, lambd = nil, norm = nil)
+  def mse_cost(data_y_hat, data_y)
+    data_y = data_y.to_a
+    data_y_hat = data_y_hat.to_a
     array = []
     i = 0
     while i < data_y_hat.size
@@ -13,15 +15,12 @@ class Costs
       array[i] = tmp / data_y_hat[0].size
       i += 1
     end
-    if !lambd.nil?
-      array = 0.5 * array.inject(:+) / data_y_hat.size + (lambd / (2.0 * data_y[i].size) * norm)
-    else
-      array = 0.5 * array.inject(:+) / data_y_hat.size
-    end
-    array
+    0.5 * array.inject(:+) / data_y_hat.size
   end
 
-  def crossentropy_cost(data_y_hat, data_y, lambd = nil, norm = nil)
+  def crossentropy_cost(data_y_hat, data_y)
+    data_y = data_y.to_a
+    data_y_hat = data_y_hat.to_a
     array = []
     i = 0
     while i < data_y_hat.size
@@ -35,11 +34,7 @@ class Costs
       array[i] = tmp
       i += 1
     end
-    if !lambd.nil?
-      array = array.inject(:+) / data_y_hat.size + (lambd / (2.0 * data_y[i].size) * norm)
-    else
-      array = array.inject(:+) / data_y_hat.size
-    end
+    array.inject(:+) / data_y_hat.size
   end
 
   private
