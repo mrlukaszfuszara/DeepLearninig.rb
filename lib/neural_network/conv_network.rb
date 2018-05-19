@@ -34,16 +34,16 @@ class ConvNetwork
     @array_of_filters << filter_size
     @array_of_paddings << padding
     @array_of_strides << stride
-    @array_of_pool << 0
+    @array_of_pool << false
   end
 
   def add_maxpool(filter_size, padding, stride)
-    @array_of_activations << 0
+    @array_of_activations << nil
     @array_of_channels << 0
     @array_of_filters << filter_size
     @array_of_paddings << padding
     @array_of_strides << stride
-    @array_of_pool << 'max'
+    @array_of_pool << true
   end
 
   def compile
@@ -70,10 +70,10 @@ class ConvNetwork
           @array_of_z[layer] = @cm.conv2d(img, @array_of_weights[layer], @array_of_paddings[layer], @array_of_strides[layer])
           @array_of_a[layer] = apply_activ(@array_of_z[layer], @array_of_activations[layer])
         else
-          if @array_of_pool[layer] == 0
+          if !@array_of_pool[layer]
             @array_of_z[layer] = @cm.conv2d(@array_of_a[layer - 1], @array_of_weights[layer], @array_of_paddings[layer], @array_of_strides[layer])
             @array_of_a[layer] = apply_activ(@array_of_z[layer], @array_of_activations[layer])
-          elsif @array_of_pool[layer] == 'max'
+          elsif @array_of_pool[layer]
             @array_of_a[layer] = @cm.max_pooling(@array_of_a[layer - 1], @array_of_filters[layer], @array_of_paddings[layer], @array_of_strides[layer])
           end
         end
@@ -145,7 +145,13 @@ class ConvNetwork
   private
 
   def create_weights(i)
-    @g.random_volume(@array_of_channels[i], @array_of_filters[i], -1..1)
+    tmp = []
+    j = 0
+    while j < @array_of_channels[i]
+      tmp << (Matrix.build(@array_of_filters[i], @array_of_filters[i]) { rand(-1..1) }).to_a
+      j += 1
+    end
+    tmp
   end
 
   def apply_activ(layer, activation)

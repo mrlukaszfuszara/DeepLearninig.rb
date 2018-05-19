@@ -1,21 +1,4 @@
 class Generators
-  def random_volume(no_filters, channels, range)
-    r = Random.new
-    array = []
-    filters = 0
-    while filters < no_filters
-      array[filters] = []
-      tmp = r.rand(range)
-      k = 0
-      while k < channels
-        array[filters] = tmp
-        k += 1
-      end
-      filters += 1
-    end
-    array
-  end
-
   def generate_images_path(dir_path, save_path)
     tmp = Dir.pwd
     Dir.chdir(dir_path)

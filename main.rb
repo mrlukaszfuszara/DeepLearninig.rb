@@ -17,9 +17,10 @@ class Main
 
   def train_conv(images_path, images)
     cn = ConvNetwork.new
-    cn.add_convnet('leaky_relu', 6, 3, 0, 4)
-    cn.add_maxpool(3, 0, 2)
-    cn.add_convnet('leaky_relu', 8, 3, 2, 1)
+    cn.input('leaky_relu', 3, 5, 1, 2)
+    cn.add_convnet('leaky_relu', 8, 3, 1, 2)
+    cn.add_maxpool(3, 0, 1)
+    cn.add_convnet('leaky_relu', 16, 3, 2, 1)
     cn.compile
     cn.fit(images_path, images)
     img_x = cn.return_flatten
@@ -30,6 +31,7 @@ class Main
   def train_nn(data_x, data_y, batch_size, epochs, dev_data, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum)
     nn = NeuralNetwork.new
     nn.input(data_x[0][0].size, 'leaky_relu')
+    nn.add_neuralnet(32, 'leaky_relu')
     nn.add_neuralnet(32, 'leaky_relu')
     nn.add_neuralnet(data_y[0][0].size, 'softmax')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, iterations, momentum)
@@ -59,10 +61,10 @@ files = Marshal.load File.open('./data/images.msh', 'rb')
 
 network = Main.new
 
-img_x = network.train_conv('./dataset/images/', files)
+#img_x = network.train_conv('./dataset/images/', files)
 
-output = Marshal.dump(img_x)
-File.open('ConvNet.msh', 'wb') { |f| f.write(output) }
+#output = Marshal.dump(img_x)
+#File.open('ConvNet.msh', 'wb') { |f| f.write(output) }
 
 img_x = Marshal.load File.open('ConvNet.msh', 'rb')
 
@@ -89,19 +91,18 @@ g = Generators.new
 img_y = g.tags_to_numbers(img_y)
 img_y = g.one_hot_vector(img_y)
 
-batch_size = 2
+batch_size = 4
 
-smb = SplitterMiniBatch.new(batch_size, img_x, img_y)
-img_x = smb.data_x
-img_y = smb.data_y
-
+smb = SplitterMiniBatch.new(img_x, img_y, batch_size)
+img_x = smb.x
+img_y = smb.y
 
 network = Main.new
-epochs = 3
+epochs = 10
 optimizer = 'BGDwM'
 cost_function = 'crossentropy'
-learning_rate = 0.00001
-iterations = 12
+learning_rate = 0.001
+iterations = 10
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
 network.train_nn(img_x, img_y, batch_size, epochs, nil, cost_function, optimizer, learning_rate, decay_rate, iterations, momentum)

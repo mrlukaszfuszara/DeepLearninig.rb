@@ -144,16 +144,14 @@ class NeuralNetwork
   private
 
   def create_weights(counter)
-    Matrix.build(@array_of_layers[counter], @array_of_layers[counter + 1]) { rand(0.0..0.01) } * Math.sqrt(2.0 / @array_of_layers[counter])
+    Matrix.build(@array_of_layers[counter], @array_of_layers[counter + 1]) { rand(0.0..0.01) * Math.sqrt(2.0 / @array_of_layers[counter]) }
   end
 
   def create_deltas
     @array_of_v_delta_w = []
-    @array_of_s_delta_w = []
     layer = 0
     while layer < @array_of_layers.size - 1
-      @array_of_v_delta_w[layer] = Matrix.build(@array_of_layers[layer], @array_of_layers[layer + 1]) { 0.01 }
-      @array_of_s_delta_w[layer] = Matrix.build(@array_of_layers[layer], @array_of_layers[layer + 1]) { 0.01 }
+      @array_of_v_delta_w << Matrix.build(@array_of_layers[layer], @array_of_layers[layer + 1]) { 1.0 }
       layer += 1
     end
   end
@@ -163,42 +161,33 @@ class NeuralNetwork
     @array_of_z = []
 
     layer = 0
-    while layer < @array_of_layers.size - 1
+    while layer < @array_of_layers.size
       if layer.zero?
-        @array_of_z[layer] = data_x * @array_of_weights[layer]
+        @array_of_z[layer] = data_x
+        @array_of_a[layer] = data_x
+      elsif !layer.zero?
+        @array_of_z[layer] = @array_of_a[layer - 1] * @array_of_weights[layer - 1]
+        @array_of_a[layer] = apply_activ(@array_of_z[layer], @array_of_activations[layer])
       end
-      if !layer.zero?
-        @array_of_z[layer] = @array_of_a[layer - 1] * @array_of_weights[layer]
-      end
-      @array_of_a[layer] = apply_activ(@array_of_z[layer], @array_of_activations[layer + 1])
       layer += 1
     end
   end
 
   def back_propagation(data_x, data_y)
-    delta_z = []
-    delta_w = []
+    delta = []
 
-    layer = @array_of_a.size - 1
+    layer = @array_of_layers.size - 1
     while layer >= 0
-      if layer == @array_of_a.size - 1
-        if @cost_function == 'mse'
-          delta_z[layer] = @array_of_a[layer] - data_y
-        elsif @cost_function == 'crossentropy'
-          delta_z[layer] = @array_of_a[layer] - data_y
-        end
-      else
-        w_dot_d = delta_z[layer + 1] * @array_of_weights[layer - 1].transpose
-        deriv = apply_deriv(@array_of_a[layer], @array_of_activations[layer + 1])
-        delta_z[layer] = w_dot_d.entrywise_product deriv
+      if layer == @array_of_layers.size - 1
+        delta[layer] = data_y - @array_of_a[layer]
+      elsif layer != @array_of_layers.size - 1
+        delta[layer] = (delta[layer + 1] * @array_of_weights[layer].transpose).entrywise_product(apply_deriv(@array_of_z[layer], @array_of_activations[layer]))
       end
-      if layer > 0
-        delta_w[layer] = @array_of_a[layer - 1].transpose * delta_z[layer]
-      else
-        delta_w[layer] = data_x.transpose * delta_z[layer]
-      end
-      @array_of_delta_w[layer] = delta_w[layer] * (1.0 / @array_of_layers[layer])
-
+      layer -= 1
+    end
+    layer = @array_of_layers.size - 1
+    while layer > 0
+      @array_of_delta_w[layer - 1] = @array_of_a[layer].transpose * delta[layer - 1]
       layer -= 1
     end
   end
@@ -207,17 +196,16 @@ class NeuralNetwork
     if @optimizer == 'BGD'
       layer = @array_of_weights.size - 1
       while layer >= 0
-        @array_of_weights[layer] = @array_of_weights[layer] - @learning_rate * @array_of_delta_w[layer]
+        @array_of_weights[layer] -= @learning_rate * @array_of_delta_w[layer].transpose
         layer -= 1
       end
     elsif @optimizer == 'BGDwM'
       layer = @array_of_weights.size - 1
       while layer >= 0
         tmp0 = @array_of_v_delta_w[layer] * @momentum[0]
-        tmp1 = @array_of_delta_w[layer] * (1.0 - @momentum[0])
+        tmp1 = @array_of_delta_w[layer].transpose * (1.0 - @momentum[0])
         @array_of_v_delta_w[layer] = tmp0 + tmp1
-        @array_of_weights[layer] = @array_of_weights[layer] - @learning_rate * @array_of_v_delta_w[layer]
-
+        @array_of_weights[layer] -= @learning_rate * @array_of_v_delta_w[layer]
         layer -= 1
       end
     end
@@ -225,26 +213,19 @@ class NeuralNetwork
 
   def apply_dropout
     layer = 0
-    while layer < @array_of_layers.size - 1
-      if @array_of_dropouts[layer + 1] != 1.0
-        puts 'TODO: Dropout'
-        array_of_dropouts_final = []
-        array_of_random_values = @g.random_matrix(@array_of_a[layer].size, @array_of_a[layer][0].size, 0.0..1.0)
-        sample = 0
-        while sample < @array_of_a[layer].size
-          array_of_dropouts_final[sample] = []
-          nodes = 0
-          while nodes < @array_of_a[layer][sample].size
-            if array_of_random_values[sample][nodes] > @array_of_dropouts[layer + 1]
-              array_of_dropouts_final[sample][nodes] = 0.0
-            else
-              array_of_dropouts_final[sample][nodes] = 1.0
-            end
-            nodes += 1
+    while layer < @array_of_a.size
+      if @array_of_dropouts[layer] != 1.0
+        random_values_matrix = Matrix.build(@array_of_a[layer].row_size, @array_of_a[layer].column_size) { rand(0.0..1.0) }
+        row = 0
+        while row < random_values_matrix.row_size
+          col = 0
+          while col < random_values_matrix.column_size
+            @array_of_dropouts[layer] > random_values_matrix[row, col] ? @array_of_a[layer][row, col] * 1.0 : @array_of_a[layer][row, col] * 0.0
+            col += 1
           end
-          sample += 1
+          row += 1
         end
-        @array_of_a[layer] = @mm.dot(@mm.mult(@array_of_a[layer], array_of_dropouts_final), (1.0 / @array_of_dropouts[layer + 1]))
+        @array_of_a[layer] = @array_of_a[layer] * (1.0 / @array_of_dropouts[layer])
       end
       layer += 1
     end

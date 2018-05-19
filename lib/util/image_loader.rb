@@ -7,14 +7,20 @@ class ImageLoader
     height = img.dimension.height
     width  = img.dimension.width
 
-    array_of_pixels = []
+    red_array = []
+    green_array = []
+    blue_array = []
 
     height.times do |i|
-      array_of_pixels[i] = []
+      red_array[i] = []
+      green_array[i] = []
+      blue_array[i] = []
       width.times do |j|
-        array_of_pixels[i] << [ChunkyPNG::Color.r(img[j, i]), ChunkyPNG::Color.g(img[j, i]), ChunkyPNG::Color.b(img[j, i])]
+        red_array[i] << ChunkyPNG::Color.r(img[j, i])
+        green_array[i] << ChunkyPNG::Color.g(img[j, i])
+        blue_array[i] << ChunkyPNG::Color.b(img[j, i])
       end
     end
-    array_of_pixels
+    [red_array, green_array, blue_array]
   end
 end

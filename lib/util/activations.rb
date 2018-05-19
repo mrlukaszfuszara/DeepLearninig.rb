@@ -80,20 +80,4 @@ class Activations
     end
     array
   end
-
-  private
-
-  def matrix_check(variable)
-    logic = nil
-    if variable.class == Array
-      if variable.all? { |e| e.class == Array }
-        logic = 2
-      else
-        logic = 1
-      end
-    else
-      logic = 0
-    end
-    logic
-  end
 end
