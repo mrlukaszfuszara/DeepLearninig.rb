@@ -25,10 +25,10 @@ class Costs
     i = 0
     while i < data_y_hat.size
       array[i] = []
-      tmp = 0
+      tmp = 0.0
       j = 0
       while j < data_y_hat[i].size
-        tmp += -1.0 * data_y[i][j] * Math.log(data_y_hat[i][j])
+        tmp += -1.0 * (data_y[i][j] * Math.log(data_y_hat[i][j]))
         j += 1
       end
       array[i] = tmp

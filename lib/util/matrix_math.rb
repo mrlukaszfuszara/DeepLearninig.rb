@@ -18,4 +18,36 @@ class MatrixMath
   def matrix_square(matrix)
     matrix.collect { |e| e**2 }
   end
+
+  def elementwise_div(matrix1, matrix2)
+    if matrix1.row_size == matrix2.row_size && matrix1.column_size == matrix2.column_size
+      array = []
+      i = 0
+      while i < matrix1.row_size
+        array[i] = []
+        j = 0
+        while j < matrix1.column_size
+          array[i][j] = matrix1[i, j] / matrix2[i, j]
+          j += 1
+        end
+        i += 1
+      end
+    end
+    Matrix[*array]
+  end
+
+  def elementwise_add(matrix1, variable)
+    array = []
+    i = 0
+    while i < matrix1.row_size
+      array[i] = []
+      j = 0
+      while j < matrix1.column_size
+        array[i][j] = matrix1[i, j] + variable
+        j += 1
+      end
+      i += 1
+    end
+    Matrix[*array]
+  end
 end

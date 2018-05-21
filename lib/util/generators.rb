@@ -1,3 +1,5 @@
+require 'chunky_png'
+
 class Generators
   def generate_images_path(dir_path, save_path)
     tmp = Dir.pwd
