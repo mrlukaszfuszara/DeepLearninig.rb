@@ -24,7 +24,7 @@ class ConvNetwork
     @array_of_elements = []
   end
 
-  def input(activation, channels, filter_size, padding, stride)
+  def input(activation = 'x', channels = 3, filter_size = 0, padding = 0, stride = 0)
     add_convnet(activation, channels, filter_size, padding, stride)
   end
 
@@ -67,8 +67,8 @@ class ConvNetwork
       layer = 0
       while layer < @array_of_channels.size
         if layer.zero?
-          @array_of_z[layer] = @cm.conv2d(img, @array_of_weights[layer], @array_of_paddings[layer], @array_of_strides[layer])
-          @array_of_a[layer] = apply_activ(@array_of_z[layer], @array_of_activations[layer])
+          @array_of_z[layer] = img
+          @array_of_a[layer] = @array_of_z[layer]
         else
           if !@array_of_pool[layer]
             @array_of_z[layer] = @cm.conv2d(@array_of_a[layer - 1], @array_of_weights[layer], @array_of_paddings[layer], @array_of_strides[layer])
@@ -145,19 +145,24 @@ class ConvNetwork
   private
 
   def create_weights(i)
-    tmp = []
+    array = []
     j = 0
-    while j < @array_of_channels[i]
-      tmp << (Matrix.build(@array_of_filters[i], @array_of_filters[i]) { rand(-1..1) }).to_a
+    while j < @array_of_filters[i]
+      r = rand(-1..1)
+      array[j] = []
+      k = 0
+      while k < @array_of_filters[i]
+        array[j][k] = r
+        k += 1
+      end
       j += 1
     end
-    tmp
+    [array] * @array_of_channels[i]
   end
 
   def apply_activ(layer, activation)
-    if activation == 'nil'
-      tmp = layer
-    elsif activation == 'relu'
+    tmp = nil
+    if activation == 'relu'
       tmp = @a.relu_conv(layer)
     elsif activation == 'leaky_relu'
       tmp = @a.leaky_relu_conv(layer)

@@ -37,9 +37,7 @@ class Generators
     uniqe_array = []
     i = 0
     while i < data_y.size
-      if !uniqe_array.include?(data_y[i])
-        uniqe_array << data_y[i]
-      end
+      uniqe_array << data_y[i] unless uniqe_array.include?(data_y[i])
       i += 1
     end
     labeled_array = []

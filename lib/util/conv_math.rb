@@ -21,63 +21,66 @@ class ConvMath
       pad += 1
     end
 
-    filter_center = filter[0].size / 2
+    output_size = volume[0].size - filter[0].size + 1
 
     array = []
-    i = 0
-    while i < filter.size
-      out = []
-      j = 0
-      while j < volume.size
-        out[j] = []
-        k = 0
-        while k < volume[j].size
-          out[j][k] = []
-          l = 0
-          while l < volume[j][0].size
-            out[j][k][l] = 0
-            m = 0
-            while m < filter[i].size
-              mm = filter[i].size - 1 - m
-              n = 0
-              while n < filter[i].size
-                nn = filter[i].size - 1 - n
-                kk = k + (m - filter_center)
-                ll = l + (n - filter_center)
-                if kk >= 0 && kk < volume[j].size - 1 && ll >= 0 && ll < volume[j][0].size - 1
-                  out[j][k][l] += volume[j][kk][ll] * filter[i][mm][nn]
-                end
-                n += 1
+    chf = 0
+    while chf < filter.size
+      array[chf] = []
+      chv = 0
+      while chv < volume.size
+        array[chf][chv] = []
+        row = filter[0].size
+        while row < output_size
+          array[chf][chv][row] = []
+          column = filter[0].size
+          while column < output_size
+            array[chf][chv][row][column] = []
+            f0 = row - filter[0].size
+            while f0 < row
+              array[chf][chv][row][column][f0] = []
+              f1 = column - filter[0].size
+              while f1 < column
+                array[chf][chv][row][column][f0] << volume[chv][f0][f1]
+                f1 += 1
               end
-              m += 1
+              f0 += 1
             end
-            l += stride
+            array[chf][chv][row][column].compact!
+            array[chf][chv][row][column] = (Matrix[*array[chf][chv][row][column]].hadamard_product(Matrix[*filter[chf]])).to_a
+            column += stride
           end
-          out[j][k] = out[j][k] - [nil]
-          k += stride
+          array[chf][chv][row].compact!
+          row += stride
         end
-        out[j] = out[j] - [nil]
-        j += 1
+        array[chf][chv].compact!
+        chv += 1
       end
-      array[i] = []
+      chf += 1
+    end
+    out = []
+    i = 0
+    while i < array.size
+      out[i] = []
       j = 0
-      while j < out[0].size
-        array[i][j] = []
+      while j < array[0][0].size
+        out[i][j] = []
         k = 0
-        while k < out[0][0].size
-          array[i][j][k] = 0
+        while k < array[0][0].size
+          out[i][j][k] = []
           l = 0
-          while l < out.size
-            array[i][j][k] += out[l][j][k]
+          while l < array[0].size
+            out[i][j][k][l] = array[i][l][j][k].flatten.inject(:+)
             l += 1
           end
+          out[i][j][k] = out[i][j][k].inject(:+)
           k += 1
         end
         j += 1
       end
       i += 1
     end
-    array
+    out
   end
 
   def max_pooling(volume, filter_size, padding, stride)
@@ -105,33 +108,35 @@ class ConvMath
     output_size = volume.size - filter_size.size + 1
 
     array = []
-    i = 0
-    while i < output_size
-      array[i] = []
-      j = 0
-      while j < output_size
-        array[i][j] = []
-        k = 0
-        while k < volume[0][0].size
-          array[i][j][k] = []
-          l = 0
-          while l < filter_size
-            m = 0
-            while m < filter_size
-              array[i][j][k] << volume[i + l][j + m][k]
-              m += 1
+    chv = 0
+    while chv < volume.size
+      array[chv] = []
+      row = filter_size
+      while row < output_size
+        array[chv][row] = []
+        column = filter_size
+        while column < output_size
+          array[chv][row][column] = []
+          f0 = row - filter_size
+          while f0 < row
+            array[chv][row][column][f0] = []
+            f1 = column - filter_size
+            while f1 < column
+              array[chv][row][column][f0] << volume[chv][f0][f1]
+              f1 += 1
             end
-            l += 1
+            f0 += 1
           end
-          array[i][j][k] = (array[i][j][k] - [nil]).max
-          k += 1
+          array[chv][row][column] = array[chv][row][column].flatten.compact
+          array[chv][row][column] = array[chv][row][column].max
+          column += stride
         end
-        array[i][j] = array[i][j] - [nil]
-        j += stride
+        array[chv][row].compact!
+        row += stride
       end
-      array[i] = array[i] - [nil]
-      i += stride
+      array[chv].compact!
+      chv += 1
     end
-    array - [nil]
+    array
   end
 end

@@ -36,7 +36,7 @@ class NeuralNetwork
     @momentum = momentum
 
     @array_of_delta_w = []
-    
+
     i = 0
     while i < @array_of_layers.size - 1
       @array_of_weights << create_weights(i)
@@ -188,9 +188,9 @@ class NeuralNetwork
     layer = @array_of_layers.size - 1
     while layer > 0
       if layer != 1
-        @array_of_delta_w[layer - 1] = (1.0 / data_x.column_size) * delta[layer] * @array_of_a[layer - 1].transpose
+        @array_of_delta_w[layer - 1] = (1.0 / @array_of_layers[layer]) * delta[layer] * @array_of_a[layer - 1].transpose
       elsif layer == 1
-        @array_of_delta_w[layer - 1] = (1.0 / data_x.column_size) * delta[layer] * data_x
+        @array_of_delta_w[layer - 1] = (1.0 / @array_of_layers[layer]) * delta[layer] * data_x
       end
       layer -= 1
     end
@@ -237,18 +237,22 @@ class NeuralNetwork
         while row < random_values_matrix.row_size
           col = 0
           while col < random_values_matrix.column_size
-            @array_of_dropouts[layer] > random_values_matrix[row, col] ? @array_of_a[layer][row, col] * 1.0 : @array_of_a[layer][row, col] * 0.0
+            if @array_of_dropouts[layer] > random_values_matrix[row, col]
+              @array_of_a[layer][row, col] = 1.0 * @array_of_a[layer][row, col]
+            else
+              @array_of_a[layer][row, col] = 0.0 * @array_of_a[layer][row, col]
+            end
             col += 1
           end
           row += 1
         end
-        @array_of_a[layer] = @array_of_a[layer] * (1.0 / @array_of_dropouts[layer])
       end
       layer += 1
     end
   end
 
   def apply_cost(last_layer, data_y)
+    tmp = nil
     if @cost_function == 'mse'
       tmp1 = @c.mse_cost(last_layer, data_y.transpose)
     elsif @cost_function == 'crossentropy'
@@ -258,6 +262,7 @@ class NeuralNetwork
   end
 
   def apply_activ(layer, activation)
+    tmp = nil
     if activation == 'relu'
       tmp = @a.relu(layer)
     elsif activation == 'leaky_relu'
@@ -269,6 +274,7 @@ class NeuralNetwork
   end
 
   def apply_deriv(layer, activation)
+    tmp = nil
     if activation == 'relu'
       tmp = @a.relu_d(layer)
     elsif activation == 'leaky_relu'

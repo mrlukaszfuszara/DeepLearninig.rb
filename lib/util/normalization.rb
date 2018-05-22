@@ -1,3 +1,5 @@
+=begin
+
 class Normalization
   attr_reader :mean, :sigma, :sd
 
@@ -87,3 +89,4 @@ class Normalization
     logic
   end
 end
+=end

@@ -1,4 +1,8 @@
 class Costs
+  def initialize
+    @math = MatrixMath.new
+  end
+
   def mse_cost(data_y_hat, data_y)
     data_y = data_y.to_a
     data_y_hat = data_y_hat.to_a
@@ -28,7 +32,7 @@ class Costs
       tmp = 0.0
       j = 0
       while j < data_y_hat[i].size
-        tmp += -1.0 * (data_y[i][j] * Math.log(data_y_hat[i][j]))
+        tmp += -1.0 * (data_y[i][j] * Math.log(data_y_hat[i][j] + 10**-8))
         j += 1
       end
       array[i] = tmp

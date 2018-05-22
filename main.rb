@@ -1,7 +1,6 @@
 require 'io/console'
 require 'csv'
 require 'matrix'
-# require 'pp'
 
 require './lib/util/splitter_mini_batch'
 require './lib/neural_network/neural_network'
@@ -13,10 +12,9 @@ require './lib/neural_network/conv_network'
 class Main
   def train_conv(images_path, images)
     cn = ConvNetwork.new
-    cn.input('leaky_relu', 3, 5, 1, 2)
-    cn.add_convnet('leaky_relu', 4, 3, 1, 2)
-    cn.add_maxpool(3, 0, 1)
-    cn.add_convnet('leaky_relu', 18, 3, 2, 1)
+    cn.input
+    cn.add_convnet('leaky_relu', 20, 3, 3, 5)
+    cn.add_maxpool(2, 0, 2)
     cn.compile
     cn.fit(images_path, images)
     img_x = cn.return_flatten
@@ -24,11 +22,12 @@ class Main
     cn.save_architecture('./weights/arch_cn.msh')
     img_x
   end
-  def train_nn(data_x, data_y, batch_size, epochs, dev_data, cost_function, optimizer, learning_rate, decay_rate, momentum)
+
+  def train_nn(data_x, data_y, epochs, cost_function, optimizer, learning_rate, decay_rate, momentum)
     nn = NeuralNetwork.new
     nn.input(data_x[0][0].size)
-    nn.add_neuralnet(16, 'leaky_relu', 0.5)
-    nn.add_neuralnet(16, 'leaky_relu', 0.5)
+    nn.add_neuralnet(128, 'leaky_relu', 0.75)
+    nn.add_neuralnet(128, 'leaky_relu', 0.75)
     nn.add_neuralnet(data_y[0][0].size, 'softmax')
     nn.compile(optimizer, cost_function, learning_rate, decay_rate, momentum)
     tmp = nn.fit(data_x, data_y, epochs)
@@ -37,7 +36,7 @@ class Main
     tmp
   end
 
-  def predict_conv(images_path, images)
+  def predict_conv
     cn = ConvNetwork.new
     cn.load_architecture('./weights/arch_cn.msh')
     cn.load_weights('./weights/weights_cn.msh')
@@ -89,7 +88,7 @@ g = Generators.new
 img_y = g.tags_to_numbers(img_y)
 img_y = g.one_hot_vector(img_y)
 
-batch_size = 8
+batch_size = 32
 
 smb = SplitterMiniBatch.new(img_x, img_y, batch_size)
 img_x = smb.x
@@ -99,10 +98,10 @@ network = Main.new
 epochs = 3
 optimizer = 'Adam'
 cost_function = 'crossentropy'
-learning_rate = 0.0001
+learning_rate = 0.0005
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
-network.train_nn(img_x, img_y, batch_size, epochs, nil, cost_function, optimizer, learning_rate, decay_rate, momentum)
+network.train_nn(img_x, img_y, epochs, cost_function, optimizer, learning_rate, decay_rate, momentum)
 
 network = Main.new
 network.predict_nn(img_x, img_y)

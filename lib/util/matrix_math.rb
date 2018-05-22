@@ -1,3 +1,9 @@
+class Matrix
+  def []=(i, j, x)
+    @rows[i][j] = x
+  end
+end
+
 class MatrixMath
   def dim(matrix)
     [matrix.column_size, matrix.row_size]
