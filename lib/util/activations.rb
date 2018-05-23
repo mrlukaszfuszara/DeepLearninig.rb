@@ -41,7 +41,7 @@ class Activations
       while j < volume[0].size
         array[i][j] = []
         k = 0
-        while k < volume[i][j].size
+        while k < volume[0][0].size
           if volume[i][j][k] > 0.0
             array[i][j][k] = volume[i][j][k]
           else

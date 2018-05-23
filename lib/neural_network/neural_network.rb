@@ -254,11 +254,11 @@ class NeuralNetwork
   def apply_cost(last_layer, data_y)
     tmp = nil
     if @cost_function == 'mse'
-      tmp1 = @c.mse_cost(last_layer, data_y.transpose)
+      tmp = @c.mse_cost(last_layer, data_y.transpose)
     elsif @cost_function == 'crossentropy'
-      tmp1 = @c.crossentropy_cost(last_layer, data_y.transpose)
+      tmp = @c.crossentropy_cost(last_layer, data_y.transpose)
     end
-    tmp1
+    tmp
   end
 
   def apply_activ(layer, activation)

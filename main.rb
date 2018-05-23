@@ -13,8 +13,10 @@ class Main
   def train_conv(images_path, images)
     cn = ConvNetwork.new
     cn.input
-    cn.add_convnet('leaky_relu', 20, 3, 3, 5)
-    cn.add_maxpool(2, 0, 2)
+    cn.add_convnet('leaky_relu', 10, 3, 5, 3)
+    cn.add_maxpool(2, 5, 2)
+    cn.add_convnet('leaky_relu', 20, 3, 5, 3)
+    cn.add_maxpool(2, 5, 2)
     cn.compile
     cn.fit(images_path, images)
     img_x = cn.return_flatten
@@ -96,7 +98,7 @@ img_y = smb.y
 
 network = Main.new
 epochs = 3
-optimizer = 'Adam'
+optimizer = 'BGD'
 cost_function = 'crossentropy'
 learning_rate = 0.0005
 decay_rate = 1

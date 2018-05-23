@@ -79,7 +79,8 @@ class ConvNetwork
         end
         layer += 1
       end
-      @array_of_elements << @array_of_a
+
+      @array_of_elements << @array_of_a.last
 
       element += 1
 
@@ -146,18 +147,22 @@ class ConvNetwork
 
   def create_weights(i)
     array = []
-    j = 0
-    while j < @array_of_filters[i]
-      r = rand(-1..1)
-      array[j] = []
-      k = 0
-      while k < @array_of_filters[i]
-        array[j][k] = r
-        k += 1
+    ch = 0
+    while ch < @array_of_channels[i]
+      array[ch] = []
+      j = 0
+      while j < @array_of_filters[i]
+        array[ch][j] = []
+        k = 0
+        while k < @array_of_filters[i]
+          array[ch][j][k] = rand(-0.5..0.5)
+          k += 1
+        end
+        j += 1
       end
-      j += 1
+      ch += 1
     end
-    [array] * @array_of_channels[i]
+    array
   end
 
   def apply_activ(layer, activation)
