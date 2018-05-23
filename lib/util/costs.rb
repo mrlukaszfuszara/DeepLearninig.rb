@@ -1,8 +1,4 @@
 class Costs
-  def initialize
-    @math = MatrixMath.new
-  end
-
   def mse_cost(data_y_hat, data_y)
     data_y = data_y.to_a
     data_y_hat = data_y_hat.to_a

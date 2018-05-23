@@ -72,39 +72,17 @@ class ConvMath
           out[i][j][k] = []
           l = 0
           while l < array[0].size
-            out[i][j][k][l] = array[i][l][j][k]
+            out[i][j][k] << array[i][l][j][k]
             l += 1
           end
-          out[i][j][k] = out[i][j][k]
+          out[i][j][k] = out[i][j][k].flatten.inject(:+)
           k += 1
         end
         j += 1
       end
       i += 1
     end
-    array = []
-    i = 0
-    while i < out.size
-      array[i] = []
-      j = 0
-      while j < out[0].size
-        array[i][j] = []
-        k = 0
-        while k < out[0][0].size
-          array[i][j][k] = []
-          l = 0
-          while l < out[0][0][0].size
-            array[i][j][k][l] = out[i][j][k][l].flatten.inject(:+)
-            l += 1
-          end
-          array[i][j][k] = array[i][j][k].inject(:+)
-          k += 1
-        end
-        j += 1
-      end
-      i += 1
-    end
-    array
+    out
   end
 
   def max_pooling(volume, filter_size, padding, stride)

@@ -6,22 +6,20 @@ require './lib/util/image_loader'
 
 class ConvNetwork
   def initialize
-    @mm = MatrixMath.new
-    @cm = ConvMath.new
+    @convmath = ConvMath.new
 
-    @g = Generators.new
-    @a = Activations.new
+    @activation = Activations.new
 
-    @array_of_activations = []
-    @array_of_pool = []
-    @array_of_channels = []
-    @array_of_filters = []
-    @array_of_paddings = []
-    @array_of_strides = []
+    @activations_array = []
+    @pool_array = []
+    @channels_array = []
+    @filters_array = []
+    @paddings_array = []
+    @strides_array = []
 
-    @array_of_weights = []
+    @weights_array = []
 
-    @array_of_elements = []
+    @elements_array = []
   end
 
   def input(activation = 'x', channels = 3, filter_size = 0, padding = 0, stride = 0)
@@ -29,27 +27,27 @@ class ConvNetwork
   end
 
   def add_convnet(activation, channels, filter_size, padding, stride)
-    @array_of_activations << activation
-    @array_of_channels << channels
-    @array_of_filters << filter_size
-    @array_of_paddings << padding
-    @array_of_strides << stride
-    @array_of_pool << false
+    @activations_array << activation
+    @channels_array << channels
+    @filters_array << filter_size
+    @paddings_array << padding
+    @strides_array << stride
+    @pool_array << false
   end
 
   def add_maxpool(filter_size, padding, stride)
-    @array_of_activations << nil
-    @array_of_channels << 0
-    @array_of_filters << filter_size
-    @array_of_paddings << padding
-    @array_of_strides << stride
-    @array_of_pool << true
+    @activations_array << nil
+    @channels_array << 0
+    @filters_array << filter_size
+    @paddings_array << padding
+    @strides_array << stride
+    @pool_array << true
   end
 
   def compile
     i = 0
-    while i < @array_of_channels.size
-      @array_of_weights << create_weights(i)
+    while i < @channels_array.size
+      @weights_array << create_weights(i)
       i += 1
     end
   end
@@ -59,34 +57,33 @@ class ConvNetwork
 
     element = 0
     while element < files.size
-      @array_of_z = []
-      @array_of_a = []
+      @z_array = []
+      @a_array = []
 
       img = img_load.load_image(path_to_files + '\\' + files[element])
 
       layer = 0
-      while layer < @array_of_channels.size
+      while layer < @channels_array.size
         if layer.zero?
-          @array_of_z[layer] = img
-          @array_of_a[layer] = @array_of_z[layer]
+          @z_array[layer] = img
+          @a_array[layer] = @z_array[layer]
         else
-          if !@array_of_pool[layer]
-            @array_of_z[layer] = @cm.conv2d(@array_of_a[layer - 1], @array_of_weights[layer], @array_of_paddings[layer], @array_of_strides[layer])
-            @array_of_a[layer] = apply_activ(@array_of_z[layer], @array_of_activations[layer])
-          elsif @array_of_pool[layer]
-            @array_of_a[layer] = @cm.max_pooling(@array_of_a[layer - 1], @array_of_filters[layer], @array_of_paddings[layer], @array_of_strides[layer])
+          if !@pool_array[layer]
+            @z_array[layer] = @convmath.conv2d(@a_array[layer - 1], @weights_array[layer], @paddings_array[layer], @strides_array[layer])
+            @a_array[layer] = apply_activ(@z_array[layer], @activations_array[layer])
+          elsif @pool_array[layer]
+            @a_array[layer] = @convmath.max_pooling(@a_array[layer - 1], @filters_array[layer], @paddings_array[layer], @strides_array[layer])
           end
         end
         layer += 1
       end
-
-      @array_of_elements << @array_of_a.last
+      @elements_array << @a_array.last
 
       element += 1
 
       windows_size = IO.console.winsize[1].to_f - 20.0
 
-      str = 'Image: ' + element.to_s + ', of: ' + files.size.to_s + ' images'
+      str = "Image: #{element}, of: #{files.size} images"
 
       max_val = files.size.to_f
       current_val = element.to_f
@@ -100,45 +97,45 @@ class ConvNetwork
   def return_flatten
     tmp = []
     element = 0
-    while element < @array_of_elements.size
-      tmp << @array_of_elements[element].flatten
+    while element < @elements_array.size
+      tmp << @elements_array[element].flatten
       element += 1
     end
     tmp
   end
 
   def save_weights(path)
-    serialized_array = Marshal.dump([@array_of_weights])
+    serialized_array = Marshal.dump([@weights_array])
     File.open(path, 'wb') { |f| f.write(serialized_array) }
   end
 
   def save_architecture(path)
-    serialized_array = Marshal.dump([@array_of_activations, @array_of_pool, @array_of_channels, @array_of_filters, @array_of_paddings, @array_of_strides])
+    serialized_array = Marshal.dump([@activations_array, @pool_array, @channels_array, @filters_array, @paddings_array, @strides_array])
     File.open(path, 'wb') { |f| f.write(serialized_array) }
   end
 
   def load_weights(path)
     tmp = Marshal.load File.open(path, 'rb')
 
-    @array_of_weights = tmp[0]
+    @weights_array = tmp[0]
   end
 
   def load_architecture(path)
     tmp = Marshal.load File.open(path, 'rb')
 
-    @array_of_channels = tmp[2]
-    layers = @array_of_channels.size
-    @array_of_channels = []
+    @channels_array = tmp[2]
+    layers = @channels_array.size
+    @channels_array = []
 
-    @array_of_activations = tmp[0]
-    @array_of_pool = tmp[1]
-    @array_of_filters = tmp[3]
-    @array_of_paddings = tmp[4]
-    @array_of_strides = tmp[5]
+    @activations_array = tmp[0]
+    @pool_array = tmp[1]
+    @filters_array = tmp[3]
+    @paddings_array = tmp[4]
+    @strides_array = tmp[5]
     
     i = 0
     while i < layers
-      add_convnet(@array_of_activations[layer], @array_of_channels[layer], @array_of_filters[layer], @array_of_paddings[layer], @array_of_strides[layer])
+      add_convnet(@activations_array[layer], @channels_array[layer], @filters_array[layer], @paddings_array[layer], @strides_array[layer])
       i += 1
     end
   end
@@ -148,13 +145,13 @@ class ConvNetwork
   def create_weights(i)
     array = []
     ch = 0
-    while ch < @array_of_channels[i]
+    while ch < @channels_array[i]
       array[ch] = []
       j = 0
-      while j < @array_of_filters[i]
+      while j < @filters_array[i]
         array[ch][j] = []
         k = 0
-        while k < @array_of_filters[i]
+        while k < @filters_array[i]
           array[ch][j][k] = rand(-0.5..0.5)
           k += 1
         end
@@ -168,9 +165,9 @@ class ConvNetwork
   def apply_activ(layer, activation)
     tmp = nil
     if activation == 'relu'
-      tmp = @a.relu_conv(layer)
+      tmp = @activation.relu_conv(layer)
     elsif activation == 'leaky_relu'
-      tmp = @a.leaky_relu_conv(layer)
+      tmp = @activation.leaky_relu_conv(layer)
     end
     tmp
   end

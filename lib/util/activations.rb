@@ -1,8 +1,4 @@
 class Activations
-  def initialize
-    @mm = MatrixMath.new
-  end
-
   def softmax(matrix)
     array = matrix.to_a
     i = 0

@@ -11,44 +11,44 @@ require './lib/neural_network/conv_network'
 
 class Main
   def train_conv(images_path, images)
-    cn = ConvNetwork.new
-    cn.input
-    cn.add_convnet('leaky_relu', 10, 3, 5, 3)
-    cn.add_maxpool(2, 5, 2)
-    cn.add_convnet('leaky_relu', 20, 3, 5, 3)
-    cn.add_maxpool(2, 5, 2)
-    cn.compile
-    cn.fit(images_path, images)
-    img_x = cn.return_flatten
-    cn.save_weights('./weights/weights_cn.msh')
-    cn.save_architecture('./weights/arch_cn.msh')
+    convnet = ConvNetwork.new
+    convnet.input
+    convnet.add_convnet('leaky_relu', 12, 5, 2, 4)
+    convnet.add_maxpool(3, 4, 2)
+    convnet.add_convnet('leaky_relu', 48, 3, 1, 1)
+    convnet.add_maxpool(3, 2, 2)
+    convnet.compile
+    convnet.fit(images_path, images)
+    img_x = convnet.return_flatten
+    convnet.save_weights('./weights/weights_convnet.msh')
+    convnet.save_architecture('./weights/arch_convnet.msh')
     img_x
   end
 
-  def train_nn(data_x, data_y, epochs, cost_function, optimizer, learning_rate, decay_rate, momentum)
-    nn = NeuralNetwork.new
-    nn.input(data_x[0][0].size)
-    nn.add_neuralnet(128, 'leaky_relu', 0.75)
-    nn.add_neuralnet(128, 'leaky_relu', 0.75)
-    nn.add_neuralnet(data_y[0][0].size, 'softmax')
-    nn.compile(optimizer, cost_function, learning_rate, decay_rate, momentum)
-    tmp = nn.fit(data_x, data_y, epochs)
-    nn.save_weights('./weights/weights_nn.msh')
-    nn.save_architecture('./weights/arch_nn.msh')
+  def train_neuralnet(data_x, data_y, epochs, cost_function, optimizer, learning_rate, decay_rate, momentum)
+    neuralnet = NeuralNetwork.new
+    neuralnet.input(data_x[0][0].size)
+    neuralnet.add_neuralnet(512, 'leaky_relu', 0.75)
+    neuralnet.add_neuralnet(512, 'leaky_relu', 0.75)
+    neuralnet.add_neuralnet(data_y[0][0].size, 'softmax')
+    neuralnet.compile(optimizer, cost_function, learning_rate, decay_rate, momentum)
+    tmp = neuralnet.fit(data_x, data_y, epochs)
+    neuralnet.save_weights('./weights/weights_neuralnet.msh')
+    neuralnet.save_architecture('./weights/arch_neuralnet.msh')
     tmp
   end
 
   def predict_conv
-    cn = ConvNetwork.new
-    cn.load_architecture('./weights/arch_cn.msh')
-    cn.load_weights('./weights/weights_cn.msh')
+    convnet = ConvNetwork.new
+    convnet.load_architecture('./weights/arch_convnet.msh')
+    convnet.load_weights('./weights/weights_convnet.msh')
   end
 
-  def predict_nn(data_x, data_y)
-    nn = NeuralNetwork.new
-    nn.load_architecture('./weights/arch_nn.msh')
-    nn.load_weights('./weights/weights_nn.msh')
-    nn.predict(data_x, data_y)
+  def predict_neuralnet(data_x, data_y)
+    neuralnet = NeuralNetwork.new
+    neuralnet.load_architecture('./weights/arch_neuralnet.msh')
+    neuralnet.load_weights('./weights/weights_neuralnet.msh')
+    neuralnet.predict(data_x, data_y)
   end
 end
 
@@ -59,9 +59,7 @@ g.generate_images_path('./dataset/images', './data/images.msh')
 files = Marshal.load File.open('./data/images.msh', 'rb')
 
 network = Main.new
-
 img_x = network.train_conv('./dataset/images/', files)
-
 output = Marshal.dump(img_x)
 File.open('ConvNet.msh', 'wb') { |f| f.write(output) }
 
@@ -87,8 +85,7 @@ while i < files.size
 end
 
 g = Generators.new
-img_y = g.tags_to_numbers(img_y)
-img_y = g.one_hot_vector(img_y)
+img_y = g.one_hot_vector(g.tags_to_numbers(img_y))
 
 batch_size = 32
 
@@ -97,13 +94,13 @@ img_x = smb.x
 img_y = smb.y
 
 network = Main.new
-epochs = 3
-optimizer = 'BGD'
+epochs = 10
+optimizer = 'RMSprop'
 cost_function = 'crossentropy'
-learning_rate = 0.0005
+learning_rate = 0.005
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
-network.train_nn(img_x, img_y, epochs, cost_function, optimizer, learning_rate, decay_rate, momentum)
+network.train_neuralnet(img_x, img_y, epochs, cost_function, optimizer, learning_rate, decay_rate, momentum)
 
 network = Main.new
-network.predict_nn(img_x, img_y)
+network.predict_neuralnet(img_x, img_y)
