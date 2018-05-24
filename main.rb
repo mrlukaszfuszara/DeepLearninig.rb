@@ -14,8 +14,8 @@ class Main
     convnet = ConvNetwork.new
     convnet.input
     convnet.add_convnet('leaky_relu', 12, 5, 2, 4)
-    convnet.add_maxpool(3, 4, 2)
-    convnet.add_convnet('leaky_relu', 48, 3, 1, 1)
+    convnet.add_maxpool(3, 2, 2)
+    convnet.add_convnet('leaky_relu', 48, 3, 2, 1)
     convnet.add_maxpool(3, 2, 2)
     convnet.compile
     convnet.fit(images_path, images)
@@ -97,7 +97,7 @@ network = Main.new
 epochs = 10
 optimizer = 'RMSprop'
 cost_function = 'crossentropy'
-learning_rate = 0.005
+learning_rate = 0.001
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
 network.train_neuralnet(img_x, img_y, epochs, cost_function, optimizer, learning_rate, decay_rate, momentum)

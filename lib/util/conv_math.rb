@@ -22,8 +22,6 @@ class ConvMath
       pad += 1
     end
 
-    output_size = volume[0].size - filter[0].size + 1
-
     array = []
     chf = 0
     while chf < filter.size
@@ -32,10 +30,10 @@ class ConvMath
       while chv < volume.size
         array[chf][chv] = []
         row = filter[0].size
-        while row < output_size
+        while row < volume[0].size
           array[chf][chv][row] = []
           column = filter[0].size
-          while column < output_size
+          while column < volume[0].size
             array[chf][chv][row][column] = []
             f0 = row - filter[0].size
             while f0 < row
@@ -107,17 +105,15 @@ class ConvMath
       pad += 1
     end
 
-    output_size = volume[0].size - filter_size + 1
-
     array = []
     chv = 0
     while chv < volume.size
       array[chv] = []
       row = filter_size
-      while row < output_size
+      while row < volume[0].size
         array[chv][row] = []
         column = filter_size
-        while column < output_size
+        while column < volume[0].size
           array[chv][row][column] = []
           f0 = row - filter_size
           while f0 < row
