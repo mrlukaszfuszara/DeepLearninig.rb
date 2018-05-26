@@ -3,6 +3,10 @@ class Matrix
     @rows[i][j] = x
   end
 
+  def size
+    [self.row_size, self.column_size]
+  end
+
   def sqrt
     self.collect { |e| Math.sqrt e }
   end

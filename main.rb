@@ -7,16 +7,17 @@ require './lib/neural_network/neural_network'
 require './lib/neural_network/conv_network'
 
 # require './lib/util/splitter_train_dev_test'
-# require './lib/util/normalization'
+require './lib/util/normalization'
 
 class Main
   def train_conv(images_path, images)
     convnet = ConvNetwork.new
     convnet.input
     convnet.add_convnet('leaky_relu', 12, 5, 2, 4)
-    convnet.add_maxpool(3, 2, 2)
-    convnet.add_convnet('leaky_relu', 48, 3, 2, 1)
-    convnet.add_maxpool(3, 2, 2)
+    convnet.add_maxpool(2, 0, 2)
+    convnet.add_convnet('leaky_relu', 48, 3, 2, 4)
+    convnet.add_maxpool(2, 0, 2)
+	convnet.add_convnet('leaky_relu', 222, 1, 0, 4)
     convnet.compile
     convnet.fit(images_path, images)
     img_x = convnet.return_flatten
@@ -27,10 +28,10 @@ class Main
 
   def train_neuralnet(data_x, data_y, epochs, cost_function, optimizer, learning_rate, decay_rate, momentum)
     neuralnet = NeuralNetwork.new
-    neuralnet.input(data_x[0][0].size)
-    neuralnet.add_neuralnet(512, 'leaky_relu', 0.75)
-    neuralnet.add_neuralnet(512, 'leaky_relu', 0.75)
-    neuralnet.add_neuralnet(data_y[0][0].size, 'softmax')
+    neuralnet.input(data_x[0].size)
+    neuralnet.add_neuralnet(32, 'leaky_relu', 0.8)
+    neuralnet.add_neuralnet(32, 'leaky_relu', 0.8)
+    neuralnet.add_neuralnet(data_y[0].size, 'softmax')
     neuralnet.compile(optimizer, cost_function, learning_rate, decay_rate, momentum)
     tmp = neuralnet.fit(data_x, data_y, epochs)
     neuralnet.save_weights('./weights/weights_neuralnet.msh')
@@ -40,18 +41,17 @@ class Main
 
   def predict_conv
     convnet = ConvNetwork.new
-    convnet.load_architecture('./weights/arch_convnet.msh')
-    convnet.load_weights('./weights/weights_convnet.msh')
+    convnet.load_architecture('./weights/arch_convnet.msh.sha512', './weights/arch_convnet.msh')
+    convnet.load_weights('./weights/weights_convnet.msh.sha512', './weights/weights_convnet.msh')
   end
 
   def predict_neuralnet(data_x, data_y)
     neuralnet = NeuralNetwork.new
-    neuralnet.load_architecture('./weights/arch_neuralnet.msh')
-    neuralnet.load_weights('./weights/weights_neuralnet.msh')
+    neuralnet.load_architecture('./weights/arch_neuralnet.msh.sha512', './weights/arch_neuralnet.msh')
+    neuralnet.load_weights('./weights/weights_neuralnet.msh.sha512', './weights/weights_neuralnet.msh')
     neuralnet.predict(data_x, data_y)
   end
 end
-
 
 g = Generators.new
 
@@ -87,17 +87,25 @@ end
 g = Generators.new
 img_y = g.one_hot_vector(g.tags_to_numbers(img_y))
 
-batch_size = 32
+batch_size = 8
 
 smb = SplitterMiniBatch.new(img_x, img_y, batch_size)
 img_x = smb.x
 img_y = smb.y
 
+output = Marshal.dump(img_x)
+File.open('tmpx.msh', 'wb') { |f| f.write(output) }
+output = Marshal.dump(img_y)
+File.open('tmpy.msh', 'wb') { |f| f.write(output) }
+
+img_x = Marshal.load File.open('tmpx.msh', 'rb')
+img_y = Marshal.load File.open('tmpy.msh', 'rb')
+
 network = Main.new
 epochs = 10
 optimizer = 'RMSprop'
 cost_function = 'crossentropy'
-learning_rate = 0.001
+learning_rate = 0.00001
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
 network.train_neuralnet(img_x, img_y, epochs, cost_function, optimizer, learning_rate, decay_rate, momentum)

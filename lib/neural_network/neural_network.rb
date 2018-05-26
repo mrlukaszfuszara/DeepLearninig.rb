@@ -1,3 +1,5 @@
+require 'digest'
+
 require './lib/util/matrix_math'
 require './lib/util/generators'
 require './lib/util/activations'
@@ -15,7 +17,7 @@ class NeuralNetwork
   end
 
   def input(batch_size)
-    add_neuralnet(batch_size, 'x')
+    add_neuralnet(batch_size, 'nil')
   end
 
   def add_neuralnet(batch_size, activation, dropout = 1.0)
@@ -52,10 +54,10 @@ class NeuralNetwork
 
         forward_propagation(x)
 
-        stat = "Epoch: #{t}, of: #{epochs} epochs, iter: #{i}, of: #{train_data_x.size} iters, train error: #{apply_cost(@a_array.last, y)}"
+        stat = "Epoch: #{t}, of: #{epochs} epochs, iter: #{i}, of: #{train_data_x.size} iters in epoch, train error: #{apply_cost(y)}"
 
         apply_dropout
-        backward_propagation(x, y)
+        backward_propagation(y)
         update_weights
 
         counter += 1
@@ -85,7 +87,7 @@ class NeuralNetwork
 
       p @a_array.last
 
-      p 'Total cost: ' + apply_cost(@a_array.last, y).to_s
+      puts 'Total cost: ' + apply_cost(y).to_s
 
       i += 1
     end
@@ -94,21 +96,33 @@ class NeuralNetwork
   def save_weights(path)
     serialized_array = Marshal.dump(@weights_array)
     File.open(path, 'wb') { |f| f.write(serialized_array) }
+    File.open(path + '.sha512', 'w') { |f| f.write(Digest::SHA512.file(path)) }
   end
 
   def save_architecture(path)
     serialized_array = Marshal.dump([@layers_array, @activations_array, @dropouts_array, @optimizer, @cost_function, @learning_rate, @decay_rate, @momentum])
     File.open(path, 'wb') { |f| f.write(serialized_array) }
+    File.open(path + '.sha512', 'w') { |f| f.write(Digest::SHA512.file(path)) }
   end
 
-  def load_weights(path)
-    tmp = Marshal.load File.open(path, 'rb')
+  def load_weights(key, path)
+    tmp = nil
+    if File.read(key) == Digest::SHA512.file(path).to_s
+      tmp = Marshal.load File.open(path, 'rb')
+    else
+      puts 'SHA512 sum does not match'
+    end
 
     @weights_array = tmp
   end
 
-  def load_architecture(path)
-    tmp = Marshal.load File.open(path, 'rb')
+  def load_architecture(key, path)
+    tmp = nil
+    if File.read(key) == Digest::SHA512.file(path).to_s
+      tmp = Marshal.load File.open(path, 'rb')
+    else
+      puts 'SHA512 sum does not match'
+    end
 
     @layers_array = tmp[0]
     layers = @layers_array.size
@@ -142,8 +156,8 @@ class NeuralNetwork
     @s_delta_w_array = []
     layer = 0
     while layer < @layers_array.size - 1
-      @v_delta_w_array << Matrix.build(@layers_array[layer + 1], @layers_array[layer]) { 1.0**-8 }
-      @s_delta_w_array << Matrix.build(@layers_array[layer + 1], @layers_array[layer]) { 1.0**-8 }
+      @v_delta_w_array << Matrix.build(@layers_array[layer + 1], @layers_array[layer]) { 0.0 }
+      @s_delta_w_array << Matrix.build(@layers_array[layer + 1], @layers_array[layer]) { 0.0 }
       layer += 1
     end
   end
@@ -155,39 +169,27 @@ class NeuralNetwork
     layer = 0
     while layer < @layers_array.size
       if layer.zero?
-        @z_array[layer] = data_x.transpose
+        @z_array[layer] = data_x
         @a_array[layer] = @z_array[layer]
-      elsif !layer.zero?
+      else
         @z_array[layer] = @weights_array[layer - 1] * @a_array[layer - 1]
         @a_array[layer] = apply_activ(@z_array[layer], @activations_array[layer])
       end
+      @a_array[layer] = @a_array[layer].elementwise_var_div(@dropouts_array[layer])
       layer += 1
     end
   end
 
-  def backward_propagation(data_x, data_y)
-    delta = []
-
+  def backward_propagation(data_y)
     layer = @layers_array.size - 1
     while layer > 0
-      if layer == @layers_array.size - 1
-        if @cost_function == 'crossentropy'
-          delta[layer] = @a_array[layer] - data_y.transpose
-        elsif @cost_function == 'mse'
-          delta[layer] = @a_array[layer] - data_y.transpose
-        end
-      elsif layer != @layers_array.size - 1
-        delta[layer] = (@weights_array[layer].transpose * delta[layer + 1]).hadamard_product(apply_deriv(@z_array[layer], @activations_array[layer]))
+      if @layers_array.size - 1 == layer
+        delta_z = data_y - @a_array[layer]
+      else
+        delta_z = (@weights_array[layer].transpose * delta_z).hadamard_product(apply_deriv(@weights_array[layer - 1] * @a_array[layer - 1], @activations_array[layer]))
       end
-      layer -= 1
-    end
-    layer = @layers_array.size - 1
-    while layer > 0
-      if layer != 1
-        @delta_w_array[layer - 1] = (1.0 / @layers_array[layer]) * delta[layer] * @a_array[layer - 1].transpose
-      elsif layer == 1
-        @delta_w_array[layer - 1] = (1.0 / @layers_array[layer]) * delta[layer] * data_x
-      end
+      @delta_w_array[layer - 1] = delta_z * @a_array[layer - 1].transpose
+      @delta_w_array[layer - 1] = @delta_w_array[layer - 1].elementwise_var_div(@dropouts_array[layer])
       layer -= 1
     end
   end
@@ -210,7 +212,7 @@ class NeuralNetwork
       layer = @weights_array.size - 1
       while layer >= 0
         @s_delta_w_array[layer] = @momentum[0] * @s_delta_w_array[layer] + (1.0 - @momentum[0]) * @delta_w_array[layer].pow(2)
-        @weights_array[layer] -= @learning_rate * @delta_w_array[layer].elementwise_matrix_div(@s_delta_w_array[layer].sqrt)
+        @weights_array[layer] -= @learning_rate * @delta_w_array[layer].elementwise_matrix_div(@s_delta_w_array[layer].sqrt.elementwise_var_add(10**-8))
         layer -= 1
       end
     elsif @optimizer == 'Adam'
@@ -229,31 +231,29 @@ class NeuralNetwork
   def apply_dropout
     layer = 0
     while layer < @a_array.size
-      if @dropouts_array[layer] != 1.0
-        row = 0
-        while row < @a_array[layer].row_size
-          column = 0
-          while column < @a_array[layer].column_size
-            if @dropouts_array[layer] > rand(0.0..1.0)
-              @a_array[layer][row, column] = 1.0 * @a_array[layer][row, column]
-            else
-              @a_array[layer][row, column] = 0.0 * @a_array[layer][row, column]
-            end
-            column += 1
+      row = 0
+      while row < @a_array[layer].row_size
+        column = 0
+        while column < @a_array[layer].column_size
+          if @dropouts_array[layer] > rand(0.0...1.0)
+            @a_array[layer][row, column] = 1.0 * @a_array[layer][row, column]
+          else
+            @a_array[layer][row, column] = 0.0 * @a_array[layer][row, column]
           end
-          row += 1
+          column += 1
         end
+        row += 1
       end
       layer += 1
     end
   end
 
-  def apply_cost(last_layer, data_y)
+  def apply_cost(data_y)
     tmp = nil
     if @cost_function == 'mse'
-      tmp = @cost.mse_cost(last_layer, data_y.transpose)
+      tmp = @cost.mse_cost(@a_array.last, data_y)
     elsif @cost_function == 'crossentropy'
-      tmp = @cost.crossentropy_cost(last_layer, data_y.transpose)
+      tmp = @cost.crossentropy_cost(@a_array.last, data_y)
     end
     tmp
   end
@@ -276,6 +276,8 @@ class NeuralNetwork
       tmp = @activation.relu_d(layer)
     elsif activation == 'leaky_relu'
       tmp = @activation.leaky_relu_d(layer)
+    elsif activation == 'nil'
+      tmp = layer
     end
     tmp
   end

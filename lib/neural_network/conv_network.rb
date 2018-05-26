@@ -1,3 +1,4 @@
+require './lib/util/matrix_math'
 require './lib/util/conv_math'
 require './lib/util/generators'
 require './lib/util/activations'
@@ -22,7 +23,7 @@ class ConvNetwork
     @elements_array = []
   end
 
-  def input(activation = 'x', channels = 3, filter_size = 0, padding = 0, stride = 0)
+  def input(activation = 'nil', channels = 3, filter_size = 0, padding = 0, stride = 0)
     add_convnet(activation, channels, filter_size, padding, stride)
   end
 
@@ -71,7 +72,7 @@ class ConvNetwork
           if !@pool_array[layer]
             @z_array[layer] = @convmath.conv2d(@a_array[layer - 1], @weights_array[layer], @paddings_array[layer], @strides_array[layer])
             @a_array[layer] = apply_activ(@z_array[layer], @activations_array[layer])
-          elsif @pool_array[layer]
+          else
             @a_array[layer] = @convmath.max_pooling(@a_array[layer - 1], @filters_array[layer], @paddings_array[layer], @strides_array[layer])
           end
         end
@@ -105,23 +106,35 @@ class ConvNetwork
   end
 
   def save_weights(path)
-    serialized_array = Marshal.dump([@weights_array])
+    serialized_array = Marshal.dump(@weights_array)
     File.open(path, 'wb') { |f| f.write(serialized_array) }
+    File.open(path + '.sha512', 'w') { |f| f.write(Digest::SHA512.file(path)) }
   end
 
   def save_architecture(path)
     serialized_array = Marshal.dump([@activations_array, @pool_array, @channels_array, @filters_array, @paddings_array, @strides_array])
     File.open(path, 'wb') { |f| f.write(serialized_array) }
+    File.open(path + '.sha512', 'w') { |f| f.write(Digest::SHA512.file(path)) }
   end
 
-  def load_weights(path)
-    tmp = Marshal.load File.open(path, 'rb')
+  def load_weights(key, path)
+    tmp = nil
+    if File.read(key) == Digest::SHA512.file(path).to_s
+      tmp = Marshal.load File.open(path, 'rb')
+    else
+      puts 'SHA512 sum does not match'
+    end
 
-    @weights_array = tmp[0]
+    @weights_array = tmp
   end
 
-  def load_architecture(path)
-    tmp = Marshal.load File.open(path, 'rb')
+  def load_architecture(key, path)
+    tmp = nil
+    if File.read(key) == Digest::SHA512.file(path).to_s
+      tmp = Marshal.load File.open(path, 'rb')
+    else
+      puts 'SHA512 sum does not match'
+    end
 
     @channels_array = tmp[2]
     layers = @channels_array.size
