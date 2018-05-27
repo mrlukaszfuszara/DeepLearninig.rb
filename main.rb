@@ -26,14 +26,15 @@ class Main
     img_x
   end
 
-  def train_neuralnet(data_x, data_y, epochs, cost_function, optimizer, learning_rate, decay_rate, momentum)
+  def train_neuralnet(data_x, data_y, epochs, iterations, cost_function, optimizer, learning_rate, decay_rate, momentum)
     neuralnet = NeuralNetwork.new
     neuralnet.input(data_x[0].size)
-    neuralnet.add_neuralnet(32, 'leaky_relu', 0.8)
-    neuralnet.add_neuralnet(32, 'leaky_relu', 0.8)
+    neuralnet.add_neuralnet(128, 'leaky_relu', 0.5)
+    neuralnet.add_neuralnet(128, 'leaky_relu', 0.5)
+    neuralnet.add_neuralnet(128, 'leaky_relu', 0.5)
     neuralnet.add_neuralnet(data_y[0].size, 'softmax')
     neuralnet.compile(optimizer, cost_function, learning_rate, decay_rate, momentum)
-    tmp = neuralnet.fit(data_x, data_y, epochs)
+    tmp = neuralnet.fit(data_x, data_y, epochs, iterations)
     neuralnet.save_weights('./weights/weights_neuralnet.msh')
     neuralnet.save_architecture('./weights/arch_neuralnet.msh')
     tmp
@@ -53,15 +54,17 @@ class Main
   end
 end
 
+=begin
+
 g = Generators.new
 
-g.generate_images_path('./dataset/images', './data/images.msh')
+#g.generate_images_path('./dataset/images', './data/images.msh')
 files = Marshal.load File.open('./data/images.msh', 'rb')
 
-network = Main.new
-img_x = network.train_conv('./dataset/images/', files)
-output = Marshal.dump(img_x)
-File.open('ConvNet.msh', 'wb') { |f| f.write(output) }
+#network = Main.new
+#img_x = network.train_conv('./dataset/images/', files)
+#output = Marshal.dump(img_x)
+#File.open('ConvNet.msh', 'wb') { |f| f.write(output) }
 
 img_x = Marshal.load File.open('ConvNet.msh', 'rb')
 
@@ -87,7 +90,7 @@ end
 g = Generators.new
 img_y = g.one_hot_vector(g.tags_to_numbers(img_y))
 
-batch_size = 8
+batch_size = 32
 
 smb = SplitterMiniBatch.new(img_x, img_y, batch_size)
 img_x = smb.x
@@ -98,17 +101,25 @@ File.open('tmpx.msh', 'wb') { |f| f.write(output) }
 output = Marshal.dump(img_y)
 File.open('tmpy.msh', 'wb') { |f| f.write(output) }
 
+=end
+
 img_x = Marshal.load File.open('tmpx.msh', 'rb')
 img_y = Marshal.load File.open('tmpy.msh', 'rb')
 
+n = Normalization.new(img_x)
+n.z_score
+n.min_max_scaler
+img_x = n.matrix
+
 network = Main.new
 epochs = 10
-optimizer = 'RMSprop'
+iterations = 5
+optimizer = 'Adam'
 cost_function = 'crossentropy'
-learning_rate = 0.00001
+learning_rate = 0.25
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
-network.train_neuralnet(img_x, img_y, epochs, cost_function, optimizer, learning_rate, decay_rate, momentum)
+network.train_neuralnet(img_x, img_y, epochs, iterations, cost_function, optimizer, learning_rate, decay_rate, momentum)
 
 network = Main.new
 network.predict_neuralnet(img_x, img_y)

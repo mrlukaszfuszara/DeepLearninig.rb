@@ -1,61 +1,43 @@
+require './lib/util/matrix_math'
+
 class Normalization
-  def min_max_scaler(matrix)
-    logic = matrix_check(matrix)
-    if logic == 2
-      matrix = matrix.transpose
-      min_val = []
-      max_val = []
-      i = 0
-      while i < matrix.size
-        min_val[i] = matrix[i].min
-        max_val[i] = matrix[i].max
-        i += 1
-      end
-      array = []
-      i = 0
-      while i < matrix.size
-        array[i] = []
-        j = 0
-        while j < matrix[i].size
-          if (max_val[i] - min_val[i]) > 0
-            array[i][j] = (matrix[i][j] - min_val[i]) / (max_val[i] - min_val[i]).to_f
-          else
-            array[i][j] = 0.0
-          end
-          j += 1
-        end
-        i += 1
-      end
-      tmp = array.transpose
-    elsif logic == 1
-      min_val = matrix.min
-      max_val = matrix.max
-      array = []
-      i = 0
-      while i < matrix.size
-        if (max_val[i] - min_val[i]) > 0
-          array[i] = (matrix[i] - min_val) / (max_val - min_val).to_f
-        else
-          array[i] = 0.0
-        end
-        i += 1
-      end
-      tmp = array
-    end
-    tmp
+  attr_reader :matrix
+
+  def initialize(matrix)
+    @matrix = matrix
   end
 
-  def matrix_check(variable)
-    logic = nil
-    if variable.class == Array
-      if variable.all? { |e| e.class == Array }
-        logic = 2
-      else
-        logic = 1
+  def min_max_scaler
+    i = 0
+    while i < @matrix.size
+      @matrix[i] = @matrix[i].transpose
+      j = 0
+      while j < @matrix[i].size
+        min_val = @matrix[i][j].min
+        max_val = @matrix[i][j].max
+        k = 0
+        while k < @matrix[i][j].size
+          @matrix[i][j][k] = (@matrix[i][j][k] - min_val) / (max_val - min_val)
+          k += 1
+        end
+        j += 1
       end
-    else
-      logic = 0
+      @matrix[i] = @matrix[i].transpose
+      i += 1
     end
-    logic
+  end
+
+  def z_score
+    mean = []
+    std_dev = []
+    i = 0
+    while i < @matrix.size
+      @matrix[i] = @matrix[i].transpose
+      mean[i] = @matrix[i].map { |e| e.inject(:+) / e.size }
+      std_dev[i] = @matrix[i].map.with_index { |e, j| Math.sqrt(e.inject { |s, f| s + (f - mean[i][j])**2 } / (e.size - 1.0)) }
+      @matrix[i] = @matrix[i].map.with_index { |e, j| e.map { |f| (f - mean[i][j]) / std_dev[i][j] } }
+      @matrix[i] = @matrix[i].transpose
+      i += 1
+    end
   end
 end

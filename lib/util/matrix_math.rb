@@ -8,11 +8,11 @@ class Matrix
   end
 
   def sqrt
-    self.collect { |e| Math.sqrt e }
+    self.map { |e| Math.sqrt e.abs }
   end
 
   def pow(n)
-    self.collect { |e| e**n }
+    self.map { |e| e**n }
   end
 
   def elementwise_matrix_div(matrix)
@@ -20,7 +20,11 @@ class Matrix
     while i < self.row_size
       j = 0
       while j < self.column_size
-        self[i, j] /= matrix[i, j]
+        if matrix[i, j] > 0
+          self[i, j] /= matrix[i, j]
+        else
+          self[i, j] = 0.0
+        end
         j += 1
       end
       i += 1
@@ -33,7 +37,11 @@ class Matrix
     while i < self.row_size
       j = 0
       while j < self.column_size
-        self[i, j] /= var
+        if var > 0
+          self[i, j] /= var
+        else
+          self[i, j] = 0.0
+        end
         j += 1
       end
       i += 1

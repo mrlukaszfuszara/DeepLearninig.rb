@@ -4,28 +4,28 @@ class Activations
     i = 0
     while i < array.size
       tmp0 = array[i].max
-      tmp1 = array[i].collect { |e| Math.exp(e - tmp0) }
+      tmp1 = array[i].map { |e| Math.exp(e - tmp0) }
       tmp2 = tmp1.inject(:+)
-      array[i] = tmp1.collect { |e| e / tmp2 } 
+      array[i] = tmp1.map { |e| e / tmp2 }
       i += 1
     end
     Matrix[*array]
   end
 
   def relu(matrix)
-    matrix.collect { |e| e > 0 ? e : 0.0 }
+    matrix.map { |e| e > 0 ? e : 0.0 }
   end
 
   def relu_d(matrix)
-    matrix.collect { |e| e > 0 ? 1.0 : 0.0 }
+    matrix.map { |e| e > 0 ? 1.0 : 0.0 }
   end
 
   def leaky_relu(matrix)
-    matrix.collect { |e| e * 0.01 > 0 ? e : e * 0.01 }
+    matrix.map { |e| e * 0.01 > 0 ? e : e * 0.01 }
   end
 
   def leaky_relu_d(matrix)
-    matrix.collect { |e| e > 0 ? 1.0 : 0.01 }
+    matrix.map { |e| e > 0 ? 1.0 : 0.01 }
   end
 
   def relu_conv(volume)

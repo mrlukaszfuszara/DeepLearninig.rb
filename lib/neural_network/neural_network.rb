@@ -42,10 +42,11 @@ class NeuralNetwork
     end
   end
 
-  def fit(train_data_x, train_data_y, epochs)
+  def fit(train_data_x, train_data_y, epochs, iterations)
+    puts 'Lets start!'
+
     counter = 0
     epochs.times do |t|
-      create_deltas
       @learning_rate /= 1.0 + @decay_rate * t
       i = 0
       while i < train_data_x.size
@@ -54,11 +55,21 @@ class NeuralNetwork
 
         forward_propagation(x)
 
-        stat = "Epoch: #{t}, of: #{epochs} epochs, iter: #{i}, of: #{train_data_x.size} iters in epoch, train error: #{apply_cost(y)}"
-
         apply_dropout
-        backward_propagation(y)
-        update_weights
+        create_deltas
+        print 'Optimisation: '
+        j = 0
+        while j < iterations
+          backward_propagation(y)
+          update_weights
+          print '|>'
+          j += 1
+        end
+        print "|\n"
+
+        forward_propagation(x)
+
+        stat = "Epoch: #{t}, of: #{epochs} epochs, iter: #{i}, of: #{train_data_x.size} iters in epoch, train error: #{apply_cost(y)}"
 
         counter += 1
 
@@ -84,8 +95,6 @@ class NeuralNetwork
       y = Matrix[*test_data_y[i]]
 
       forward_propagation(x)
-
-      p @a_array.last
 
       puts 'Total cost: ' + apply_cost(y).to_s
 
@@ -148,7 +157,7 @@ class NeuralNetwork
   private
 
   def create_weights(counter)
-    Matrix.build(@layers_array[counter + 1], @layers_array[counter]) { rand(0.0..0.01) * Math.sqrt(2.0 / @layers_array[counter]) }
+    Matrix.build(@layers_array[counter + 1], @layers_array[counter]) { rand(0.0..0.01) * Math.sqrt(2.0 / (@layers_array[counter + 1] + @layers_array[counter])) }
   end
 
   def create_deltas
@@ -156,8 +165,8 @@ class NeuralNetwork
     @s_delta_w_array = []
     layer = 0
     while layer < @layers_array.size - 1
-      @v_delta_w_array << Matrix.build(@layers_array[layer + 1], @layers_array[layer]) { 0.0 }
-      @s_delta_w_array << Matrix.build(@layers_array[layer + 1], @layers_array[layer]) { 0.0 }
+      @v_delta_w_array << Matrix.build(@layers_array[layer + 1], @layers_array[layer]) { 10**-8 }
+      @s_delta_w_array << Matrix.build(@layers_array[layer + 1], @layers_array[layer]) { 10**-8 }
       layer += 1
     end
   end
@@ -175,7 +184,6 @@ class NeuralNetwork
         @z_array[layer] = @weights_array[layer - 1] * @a_array[layer - 1]
         @a_array[layer] = apply_activ(@z_array[layer], @activations_array[layer])
       end
-      @a_array[layer] = @a_array[layer].elementwise_var_div(@dropouts_array[layer])
       layer += 1
     end
   end
@@ -184,12 +192,14 @@ class NeuralNetwork
     layer = @layers_array.size - 1
     while layer > 0
       if @layers_array.size - 1 == layer
-        delta_z = data_y - @a_array[layer]
+        delta_a = @a_array[layer] - data_y
+        delta_z = @weights_array[layer - 1].transpose * delta_a
       else
-        delta_z = (@weights_array[layer].transpose * delta_z).hadamard_product(apply_deriv(@weights_array[layer - 1] * @a_array[layer - 1], @activations_array[layer]))
+        delta_a = delta_z.hadamard_product(apply_deriv(@a_array[layer], @activations_array[layer]))
+        delta_z = @weights_array[layer - 1].transpose * delta_a
       end
-      @delta_w_array[layer - 1] = delta_z * @a_array[layer - 1].transpose
-      @delta_w_array[layer - 1] = @delta_w_array[layer - 1].elementwise_var_div(@dropouts_array[layer])
+      delta_mask = delta_a.hadamard_product(@mask_array[layer])
+      @delta_w_array[layer - 1] = delta_mask * @a_array[layer - 1].transpose
       layer -= 1
     end
   end
@@ -229,21 +239,24 @@ class NeuralNetwork
   end
 
   def apply_dropout
+    @mask_array = []
     layer = 0
     while layer < @a_array.size
+      @mask_array[layer] = Matrix.build(@a_array[layer].row_size, @a_array[layer].column_size) { 0.0 }
       row = 0
       while row < @a_array[layer].row_size
         column = 0
         while column < @a_array[layer].column_size
-          if @dropouts_array[layer] > rand(0.0...1.0)
-            @a_array[layer][row, column] = 1.0 * @a_array[layer][row, column]
+          if @dropouts_array[layer] >= rand(0.0..1.0)
+            @mask_array[layer][row, column] = 1.0 / @dropouts_array[layer]
           else
-            @a_array[layer][row, column] = 0.0 * @a_array[layer][row, column]
+            @mask_array[layer][row, column] = 0.0 / @dropouts_array[layer]
           end
           column += 1
         end
         row += 1
       end
+      @a_array[layer] = @a_array[layer].hadamard_product(@mask_array[layer])
       layer += 1
     end
   end
