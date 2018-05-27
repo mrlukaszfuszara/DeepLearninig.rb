@@ -35,7 +35,7 @@ class Normalization
       @matrix[i] = @matrix[i].transpose
       mean[i] = @matrix[i].map { |e| e.inject(:+) / e.size }
       std_dev[i] = @matrix[i].map.with_index { |e, j| Math.sqrt(e.inject { |s, f| s + (f - mean[i][j])**2 } / (e.size - 1.0)) }
-      @matrix[i] = @matrix[i].map.with_index { |e, j| e.map { |f| (f - mean[i][j]) / std_dev[i][j] } }
+      @matrix[i] = @matrix[i].map.with_index { |e, j| e.map { |f| (f - mean[i][j]) / (std_dev[i][j] / Math.sqrt(e.size)) } }
       @matrix[i] = @matrix[i].transpose
       i += 1
     end

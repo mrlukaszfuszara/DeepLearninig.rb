@@ -63,21 +63,8 @@ class ConvNetwork
 
       img = img_load.load_image(path_to_files + '\\' + files[element])
 
-      layer = 0
-      while layer < @channels_array.size
-        if layer.zero?
-          @z_array[layer] = img
-          @a_array[layer] = @z_array[layer]
-        else
-          if !@pool_array[layer]
-            @z_array[layer] = @convmath.conv2d(@a_array[layer - 1], @weights_array[layer], @paddings_array[layer], @strides_array[layer])
-            @a_array[layer] = apply_activ(@z_array[layer], @activations_array[layer])
-          else
-            @a_array[layer] = @convmath.max_pooling(@a_array[layer - 1], @filters_array[layer], @paddings_array[layer], @strides_array[layer])
-          end
-        end
-        layer += 1
-      end
+      forward_propagation(img)
+
       @elements_array << @a_array.last
 
       element += 1
@@ -165,7 +152,7 @@ class ConvNetwork
         array[ch][j] = []
         k = 0
         while k < @filters_array[i]
-          array[ch][j][k] = rand(-0.5..0.5)
+          array[ch][j][k] = rand(-0.01..0.01)
           k += 1
         end
         j += 1
@@ -175,12 +162,51 @@ class ConvNetwork
     array
   end
 
+  def forward_propagation(img)
+    layer = 0
+    while layer < @channels_array.size
+      if layer.zero?
+        @z_array[layer] = img
+        @a_array[layer] = @z_array[layer]
+      else
+        if !@pool_array[layer]
+          padd = @convmath.padding(@a_array[layer - 1], @paddings_array[layer])
+          sws = @convmath.splice_with_stride(padd, @weights_array[layer][0].size, @strides_array[layer])
+          c2d = []
+          i = 0
+          while i < @channels_array[layer]
+            c2d[i] = @convmath.conv2d(sws, @weights_array[layer][i])
+            i += 1
+          end
+          @z_array[layer] = @convmath.sum_channels(c2d)
+          @a_array[layer] = apply_activ(@z_array[layer], @activations_array[layer])
+        else
+          padd = @convmath.padding(@a_array[layer - 1], @paddings_array[layer])
+          sws = @convmath.splice_with_stride(padd, @filters_array[layer], @strides_array[layer])
+          @z_array[layer] = @convmath.max_pooling(sws)
+          @a_array[layer] = @z_array[layer]
+        end
+      end
+      layer += 1
+    end
+  end
+
   def apply_activ(layer, activation)
     tmp = nil
     if activation == 'relu'
       tmp = @activation.relu_conv(layer)
     elsif activation == 'leaky_relu'
       tmp = @activation.leaky_relu_conv(layer)
+    end
+    tmp
+  end
+
+  def apply_deriv(layer, activation)
+    tmp = nil
+    if activation == 'relu'
+      tmp = @activation.relu_conv_d(layer)
+    elsif activation == 'leaky_relu'
+      tmp = @activation.leaky_relu_conv_d(layer)
     end
     tmp
   end
