@@ -33,7 +33,7 @@ class ConvNetwork
     @filters_array << filter_size
     @paddings_array << padding
     @strides_array << stride
-    @pool_array << false
+    @pool_array << 0
   end
 
   def add_maxpool(filter_size, padding, stride)
@@ -42,7 +42,16 @@ class ConvNetwork
     @filters_array << filter_size
     @paddings_array << padding
     @strides_array << stride
-    @pool_array << true
+    @pool_array << 1
+  end
+
+  def add_avgpool(filter_size, padding, stride)
+    @activations_array << nil
+    @channels_array << 0
+    @filters_array << filter_size
+    @paddings_array << padding
+    @strides_array << stride
+    @pool_array << 2
   end
 
   def compile
@@ -169,21 +178,23 @@ class ConvNetwork
         @z_array[layer] = img
         @a_array[layer] = @z_array[layer]
       else
-        if !@pool_array[layer]
-          padd = @convmath.padding(@a_array[layer - 1], @paddings_array[layer])
-          sws = @convmath.splice_with_stride(padd, @weights_array[layer][0].size, @strides_array[layer])
-          c2d = []
+        if @pool_array[layer].zero?
+          tmp = @convmath.padding(@a_array[layer - 1], @paddings_array[layer])
+          tmp1 = []
           i = 0
           while i < @channels_array[layer]
-            c2d[i] = @convmath.conv2d(sws, @weights_array[layer][i])
+            tmp1[i] = @convmath.conv2d(tmp, @weights_array[layer][i], @strides_array[layer])
             i += 1
           end
-          @z_array[layer] = @convmath.sum_channels(c2d)
+          @z_array[layer] = @convmath.sum_channels(tmp1)
           @a_array[layer] = apply_activ(@z_array[layer], @activations_array[layer])
-        else
-          padd = @convmath.padding(@a_array[layer - 1], @paddings_array[layer])
-          sws = @convmath.splice_with_stride(padd, @filters_array[layer], @strides_array[layer])
-          @z_array[layer] = @convmath.max_pooling(sws)
+        elsif @pool_array[layer] == 1
+          tmp = @convmath.padding(@a_array[layer - 1], @paddings_array[layer])
+          @z_array[layer] = @convmath.max_pooling(tmp, @filters_array[layer], @strides_array[layer])
+          @a_array[layer] = @z_array[layer]
+        elsif @pool_array[layer] == 2
+          tmp = @convmath.padding(@a_array[layer - 1], @paddings_array[layer])
+          @z_array[layer] = @convmath.avg_pooling(tmp, @filters_array[layer], @strides_array[layer])
           @a_array[layer] = @z_array[layer]
         end
       end

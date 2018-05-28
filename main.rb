@@ -29,9 +29,9 @@ class Main
   def train_neuralnet(data_x, data_y, epochs, iterations, cost_function, optimizer, learning_rate, decay_rate, momentum)
     neuralnet = NeuralNetwork.new
     neuralnet.input(data_x[0].size)
-    neuralnet.add_neuralnet(128, 'leaky_relu', 0.5)
-    neuralnet.add_neuralnet(128, 'leaky_relu', 0.5)
-    neuralnet.add_neuralnet(128, 'leaky_relu', 0.5)
+    neuralnet.add_neuralnet(128, 'leaky_relu', 0.9)
+    neuralnet.add_neuralnet(128, 'leaky_relu', 0.9)
+    neuralnet.add_neuralnet(128, 'leaky_relu', 0.9)
     neuralnet.add_neuralnet(data_y[0].size, 'softmax')
     neuralnet.compile(optimizer, cost_function, learning_rate, decay_rate, momentum)
     tmp = neuralnet.fit(data_x, data_y, epochs, iterations)
@@ -53,6 +53,8 @@ class Main
     neuralnet.predict(data_x, data_y)
   end
 end
+
+=begin
 
 g = Generators.new
 
@@ -99,17 +101,14 @@ File.open('tmpx.msh', 'wb') { |f| f.write(output) }
 output = Marshal.dump(img_y)
 File.open('tmpy.msh', 'wb') { |f| f.write(output) }
 
+=end
+
 img_x = Marshal.load File.open('tmpx.msh', 'rb')
 img_y = Marshal.load File.open('tmpy.msh', 'rb')
 
-n = Normalization.new(img_x)
-n.z_score
-n.min_max_scaler
-img_x = n.matrix
-
 network = Main.new
 epochs = 10
-iterations = 10
+iterations = 5
 optimizer = 'Adam'
 cost_function = 'crossentropy'
 learning_rate = 0.01

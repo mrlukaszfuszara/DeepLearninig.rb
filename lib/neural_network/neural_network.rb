@@ -57,15 +57,18 @@ class NeuralNetwork
 
         apply_dropout
         create_deltas
-        print 'Optimisation: '
-        j = 0
-        while j < iterations
-          backward_propagation(y)
-          update_weights
-          print '|>'
-          j += 1
+
+        if iterations > 1
+          print 'Optimisation: '
+          j = 0
+          while j < iterations
+            backward_propagation(y)
+            update_weights
+            print '|>'
+            j += 1
+          end
+          print "|\n"
         end
-        print "|\n"
 
         forward_propagation(x)
 
@@ -195,13 +198,36 @@ class NeuralNetwork
         delta_a = @a_array[layer] - data_y
         delta_z = @weights_array[layer - 1].transpose * delta_a
       else
-        delta_a = delta_z.hadamard_product(apply_deriv(@a_array[layer], @activations_array[layer]))
+        if @cost_function == 'crossentropy' && @layers_array.size - 2 == layer
+          delta_a = delta_z.hadamard_product(apply_deriv(@a_array[layer], @activations_array[layer])).hadamard_product(crossentropy_delta(layer))
+        else
+          delta_a = delta_z.hadamard_product(apply_deriv(@a_array[layer], @activations_array[layer])).hadamard_product(@z_array[layer])
+        end
         delta_z = @weights_array[layer - 1].transpose * delta_a
       end
       delta_mask = delta_a.hadamard_product(@mask_array[layer])
       @delta_w_array[layer - 1] = delta_mask * @a_array[layer - 1].transpose
       layer -= 1
     end
+  end
+
+  def crossentropy_delta(layer)
+    array = []
+    i = 0
+    while i < @z_array[layer].row_size
+      array[i] = []
+      j = 0
+      while j < @z_array[layer].column_size
+        if i == j
+          array[i][j] = @z_array[layer][i, j] - 1.0
+        else
+          array[i][j] = @z_array[layer][i, j]
+        end
+        j += 1
+      end
+      i += 1
+    end
+    Matrix[*array]
   end
 
   def update_weights
