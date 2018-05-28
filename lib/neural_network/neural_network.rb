@@ -54,11 +54,10 @@ class NeuralNetwork
         y = Matrix[*train_data_y[i]]
 
         forward_propagation(x)
-
         apply_dropout
-        create_deltas
 
-        if iterations > 1
+        create_deltas
+        if iterations > 0
           print 'Optimisation: '
           j = 0
           while j < iterations
@@ -68,6 +67,9 @@ class NeuralNetwork
             j += 1
           end
           print "|\n"
+        else
+          backward_propagation(y)
+          update_weights
         end
 
         forward_propagation(x)

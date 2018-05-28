@@ -29,9 +29,9 @@ class Main
   def train_neuralnet(data_x, data_y, epochs, iterations, cost_function, optimizer, learning_rate, decay_rate, momentum)
     neuralnet = NeuralNetwork.new
     neuralnet.input(data_x[0].size)
-    neuralnet.add_neuralnet(128, 'leaky_relu', 0.9)
-    neuralnet.add_neuralnet(128, 'leaky_relu', 0.9)
-    neuralnet.add_neuralnet(128, 'leaky_relu', 0.9)
+    neuralnet.add_neuralnet(128, 'leaky_relu', 0.8)
+    neuralnet.add_neuralnet(128, 'leaky_relu', 0.6)
+    neuralnet.add_neuralnet(128, 'leaky_relu', 0.8)
     neuralnet.add_neuralnet(data_y[0].size, 'softmax')
     neuralnet.compile(optimizer, cost_function, learning_rate, decay_rate, momentum)
     tmp = neuralnet.fit(data_x, data_y, epochs, iterations)
@@ -108,10 +108,10 @@ img_y = Marshal.load File.open('tmpy.msh', 'rb')
 
 network = Main.new
 epochs = 10
-iterations = 5
+iterations = 20
 optimizer = 'Adam'
 cost_function = 'crossentropy'
-learning_rate = 0.01
+learning_rate = 0.0005
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
 network.train_neuralnet(img_x, img_y, epochs, iterations, cost_function, optimizer, learning_rate, decay_rate, momentum)

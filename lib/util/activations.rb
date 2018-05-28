@@ -21,11 +21,11 @@ class Activations
   end
 
   def leaky_relu(matrix)
-    matrix.map { |e| e * 0.01 > 0 ? e : e * 0.01 }
+    matrix.map { |e| e > 0 ? e : e * 0.01 }
   end
 
   def leaky_relu_d(matrix)
-    matrix.map { |e| e * 0.01 > 0 ? 1.0 : 0.01 }
+    matrix.map { |e| e > 0 ? 1.0 : 0.01 }
   end
 
   def relu_conv(volume)
