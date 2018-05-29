@@ -109,9 +109,9 @@ img_y = Marshal.load File.open('tmpy.msh', 'rb')
 network = Main.new
 epochs = 10
 iterations = 20
-optimizer = 'Adam'
+optimizer = 'BGD'
 cost_function = 'crossentropy'
-learning_rate = 0.05
+learning_rate = 0.25
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
 network.train_neuralnet(img_x, img_y, epochs, iterations, cost_function, optimizer, learning_rate, decay_rate, momentum)
