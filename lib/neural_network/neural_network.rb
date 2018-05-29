@@ -16,8 +16,8 @@ class NeuralNetwork
     @weights_array = []
   end
 
-  def input(batch_size)
-    add_neuralnet(batch_size, 'nil')
+  def input(batch_size, activation)
+    add_neuralnet(batch_size, activation)
   end
 
   def add_neuralnet(batch_size, activation, dropout = 1.0)
@@ -162,7 +162,7 @@ class NeuralNetwork
   private
 
   def create_weights(counter)
-    Matrix.build(@layers_array[counter + 1], @layers_array[counter]) { rand(0.0..0.01) * Math.sqrt(2.0 / (@layers_array[counter + 1] + @layers_array[counter])) }
+    Matrix.build(@layers_array[counter], @layers_array[counter + 1]) { rand(0.0..0.01) * Math.sqrt(2.0 / (@layers_array[counter + 1] + @layers_array[counter])) }
   end
 
   def create_deltas
@@ -170,8 +170,8 @@ class NeuralNetwork
     @s_delta_w_array = []
     layer = 0
     while layer < @layers_array.size - 1
-      @v_delta_w_array << Matrix.build(@layers_array[layer + 1], @layers_array[layer]) { 10**-8 }
-      @s_delta_w_array << Matrix.build(@layers_array[layer + 1], @layers_array[layer]) { 10**-8 }
+      @v_delta_w_array << Matrix.build(@layers_array[layer], @layers_array[layer + 1]) { 10**-8 }
+      @s_delta_w_array << Matrix.build(@layers_array[layer], @layers_array[layer + 1]) { 10**-8 }
       layer += 1
     end
   end
@@ -186,7 +186,7 @@ class NeuralNetwork
         @z_array[layer] = data_x
         @a_array[layer] = @z_array[layer]
       else
-        @z_array[layer] = @weights_array[layer - 1] * @a_array[layer - 1]
+        @z_array[layer] = @weights_array[layer - 1].transpose * @a_array[layer - 1]
         @a_array[layer] = apply_activ(@z_array[layer], @activations_array[layer])
       end
       layer += 1
@@ -194,68 +194,90 @@ class NeuralNetwork
   end
 
   def backward_propagation(data_y)
-    layer = @layers_array.size - 1
-    while layer > 0
-      if @layers_array.size - 1 == layer
-        delta_a = @a_array[layer] - data_y
-        delta_z = @weights_array[layer - 1].transpose * delta_a
-      else
-        if @cost_function == 'crossentropy' && @layers_array.size - 2 == layer
-          delta_a = delta_z.hadamard_product(apply_deriv(@a_array[layer], @activations_array[layer])).hadamard_product(crossentropy_delta(layer))
-        else
-          delta_a = delta_z.hadamard_product(apply_deriv(@a_array[layer], @activations_array[layer])).hadamard_product(@z_array[layer])
-        end
-        delta_z = @weights_array[layer - 1].transpose * delta_a
-      end
-      delta_mask = delta_a.hadamard_product(@mask_array[layer])
-      @delta_w_array[layer - 1] = delta_mask * @a_array[layer - 1].transpose
-      layer -= 1
+    if @cost_function == 'crossentropy'
+      @delta_w_array = crossentropy_delta(data_y)
+    elsif @cost_function == 'mse'
+      @delta_w_array = mse_delta(data_y)
     end
   end
 
-  def crossentropy_delta(layer)
-    array = []
-    i = 0
-    while i < @z_array[layer].row_size
-      array[i] = []
-      j = 0
-      while j < @z_array[layer].column_size
-        if i == j
-          array[i][j] = @z_array[layer][i, j] - 1.0
-        else
-          array[i][j] = @z_array[layer][i, j]
+  def crossentropy_delta(data_y)
+    delta_z = []
+    delta_x = []
+    delta_w = []
+    i = @layers_array.size - 1
+    while i > 0
+      if i == @layers_array.size - 1
+        delta_z[i] = @a_array.last - data_y
+        tmp = []
+        j = 0
+        while j < @a_array.last.row_size
+          tmp[j] = []
+          k = 0
+          while k < @a_array.last.column_size
+            if j == k
+              tmp[j][k] = @a_array.last[j, k] * (1.0 - @a_array.last[j, k])
+            else
+              tmp[j][k] = -1.0 * @a_array[i][j, k]**2
+            end
+            k += 1
+          end
+          j += 1
         end
-        j += 1
+        delta_x[i] = @weights_array[i - 1] * delta_z[i].hadamard_product(Matrix[*tmp].elementwise_var_add(-1.0)).hadamard_product(@mask_array[i])
+      else
+        delta_z[i] = delta_x[i + 1].hadamard_product(apply_activ(@a_array[i], @activations_array[i]))
+        delta_x[i] = @weights_array[i - 1] * delta_z[i].hadamard_product(@mask_array[i])
+        delta_w[i] = delta_z[i] * @z_array[i + 1].transpose
       end
-      i += 1
+      i -= 1
     end
-    Matrix[*array]
+    delta_w
+  end
+
+  def mse_delta(data_y)
+    delta_z = []
+    delta_x = []
+    delta_w = []
+    i = @layers_array.size - 1
+    while i > 0
+      if i == @layers_array.size - 1
+        delta_z[i] = @a_array.last - data_y
+        delta_x[i] = @weights_array[i - 1] * delta_z[i].hadamard_product(@mask_array[i])
+      else
+        delta_z[i] = delta_x[i + 1].hadamard_product(apply_activ(@a_array[i], @activations_array[i]))
+        delta_x[i] = @weights_array[i - 1] * delta_z[i].hadamard_product(@mask_array[i])
+        delta_w[i] = delta_z[i] * @z_array[i + 1].transpose
+      end
+      i -= 1
+    end
+    delta_w
   end
 
   def update_weights
     if @optimizer == 'BGD'
       layer = @weights_array.size - 1
-      while layer >= 0
+      while layer > 0
         @weights_array[layer] -= @learning_rate * @delta_w_array[layer]
         layer -= 1
       end
     elsif @optimizer == 'BGDwM'
       layer = @weights_array.size - 1
-      while layer >= 0
+      while layer > 0
         @v_delta_w_array[layer] = @momentum[0] * @v_delta_w_array[layer] + (1.0 - @momentum[0]) * @delta_w_array[layer]
         @weights_array[layer] -= @learning_rate * @v_delta_w_array[layer]
         layer -= 1
       end
     elsif @optimizer == 'RMSprop'
       layer = @weights_array.size - 1
-      while layer >= 0
+      while layer > 0
         @s_delta_w_array[layer] = @momentum[0] * @s_delta_w_array[layer] + (1.0 - @momentum[0]) * @delta_w_array[layer].pow(2)
         @weights_array[layer] -= @learning_rate * @delta_w_array[layer].elementwise_matrix_div(@s_delta_w_array[layer].sqrt.elementwise_var_add(10**-8))
         layer -= 1
       end
     elsif @optimizer == 'Adam'
       layer = @weights_array.size - 1
-      while layer >= 0
+      while layer > 0
         @v_delta_w_array[layer] = @momentum[0] * @v_delta_w_array[layer] + (1.0 - @momentum[0]) * @delta_w_array[layer]
         @s_delta_w_array[layer] = @momentum[1] * @s_delta_w_array[layer] + (1.0 - @momentum[1]) * @delta_w_array[layer].pow(2)
         @v_delta_w_array[layer] = @v_delta_w_array[layer].elementwise_var_div(1.0 - @momentum[0])
