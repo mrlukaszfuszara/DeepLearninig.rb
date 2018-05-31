@@ -209,14 +209,14 @@ class NeuralNetwork
     while i > 0
       tmp = []
       j = 0
-      while j < @a_array[i].row_size
+      while j < @z_array[i].row_size
         tmp[j] = []
         k = 0
-        while k < @a_array[i].column_size
+        while k < @z_array[i].column_size
           if j == k
-            tmp[j][k] = @a_array[i][j, k] * (1.0 - @a_array[i][j, k])
+            tmp[j][k] = @z_array[i][j, k] * (1.0 - @z_array[i][j, k])
           else
-            tmp[j][k] = -1.0 * @a_array[i][j, k]**2
+            tmp[j][k] = -1.0 * @z_array[i][j, k]**2
           end
           k += 1
         end

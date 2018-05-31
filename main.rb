@@ -13,11 +13,14 @@ class Main
   def train_conv(images_path, images)
     convnet = ConvNetwork.new
     convnet.input
-    convnet.add_convnet('leaky_relu', 192, 3, 1, 4)
+    convnet.add_convnet('leaky_relu', 24, 11, 1, 4)
     convnet.add_maxpool(2, 0, 2)
-	  convnet.add_convnet('leaky_relu', 222, 1, 0, 4)
-    convnet.add_convnet('leaky_relu', 222, 1, 0, 4)
-    convnet.add_convnet('leaky_relu', 222, 1, 0, 4)
+    convnet.add_convnet('leaky_relu', 64, 3, 1, 2)
+    convnet.add_maxpool(3, 0, 3)
+    convnet.add_convnet('leaky_relu', 64, 3, 2, 1)
+    convnet.add_convnet('leaky_relu', 64, 3, 2, 1)
+    convnet.add_convnet('leaky_relu', 32, 3, 2, 1)
+    convnet.add_maxpool(2, 0, 2)
     convnet.compile
     convnet.fit(images_path, images)
     img_x = convnet.return_flatten
@@ -53,8 +56,6 @@ class Main
     neuralnet.predict(data_x, data_y)
   end
 end
-
-=begin
 
 g = Generators.new
 
@@ -101,17 +102,15 @@ File.open('tmpx.msh', 'wb') { |f| f.write(output) }
 output = Marshal.dump(img_y)
 File.open('tmpy.msh', 'wb') { |f| f.write(output) }
 
-=end
-
 img_x = Marshal.load File.open('tmpx.msh', 'rb')
 img_y = Marshal.load File.open('tmpy.msh', 'rb')
 
 network = Main.new
 epochs = 10
-iterations = 20
+iterations = 10
 optimizer = 'BGD'
 cost_function = 'crossentropy'
-learning_rate = 0.25
+learning_rate = 0.1
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
 network.train_neuralnet(img_x, img_y, epochs, iterations, cost_function, optimizer, learning_rate, decay_rate, momentum)
