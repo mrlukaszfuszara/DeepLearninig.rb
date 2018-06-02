@@ -1,11 +1,13 @@
 require 'digest'
 
+require './lib/neural_network/network'
+
 require './lib/util/matrix_math'
 require './lib/util/generators'
 require './lib/util/activations'
 require './lib/util/costs'
 
-class NeuralNetwork
+class NeuralNetwork < Network
   def initialize
     @activation = Activations.new
     @cost = Costs.new
@@ -54,6 +56,8 @@ class NeuralNetwork
         y = Matrix[*train_data_y[i]]
 
         forward_propagation(x)
+        stat = "Epoch: #{t}, of: #{epochs} epochs, iter: #{i}, of: #{train_data_x.size} iters in epoch, train error: #{apply_cost(y)}"
+
         apply_dropout
 
         create_deltas
@@ -71,10 +75,6 @@ class NeuralNetwork
           backward_propagation(y)
           update_weights
         end
-
-        forward_propagation(x)
-
-        stat = "Epoch: #{t}, of: #{epochs} epochs, iter: #{i}, of: #{train_data_x.size} iters in epoch, train error: #{apply_cost(y)}"
 
         counter += 1
 
@@ -108,35 +108,20 @@ class NeuralNetwork
   end
 
   def save_weights(path)
-    serialized_array = Marshal.dump(@weights_array)
-    File.open(path, 'wb') { |f| f.write(serialized_array) }
-    File.open(path + '.sha512', 'w') { |f| f.write(Digest::SHA512.file(path)) }
+    save_data(path, @weights_array)
   end
 
   def save_architecture(path)
-    serialized_array = Marshal.dump([@layers_array, @activations_array, @dropouts_array, @optimizer, @cost_function, @learning_rate, @decay_rate, @momentum])
-    File.open(path, 'wb') { |f| f.write(serialized_array) }
-    File.open(path + '.sha512', 'w') { |f| f.write(Digest::SHA512.file(path)) }
+    save_data(path, [@layers_array, @activations_array, @dropouts_array, @optimizer, @cost_function, @learning_rate, @decay_rate, @momentum])
   end
 
   def load_weights(key, path)
-    tmp = nil
-    if File.read(key) == Digest::SHA512.file(path).to_s
-      tmp = Marshal.load File.open(path, 'rb')
-    else
-      puts 'SHA512 sum does not match'
-    end
-
+    tmp = load_data(key, path)
     @weights_array = tmp
   end
 
   def load_architecture(key, path)
-    tmp = nil
-    if File.read(key) == Digest::SHA512.file(path).to_s
-      tmp = Marshal.load File.open(path, 'rb')
-    else
-      puts 'SHA512 sum does not match'
-    end
+    tmp = load_data(key, path)
 
     @layers_array = tmp[0]
     layers = @layers_array.size
@@ -162,7 +147,7 @@ class NeuralNetwork
   private
 
   def create_weights(counter)
-    Matrix.build(@layers_array[counter + 1], @layers_array[counter]) { rand(0.0..0.01) * Math.sqrt(2.0 / (@layers_array[counter + 1] + @layers_array[counter])) }
+    Matrix.build(@layers_array[counter + 1], @layers_array[counter]) { rand(0.0..0.1) * Math.sqrt(2.0 / (@layers_array[counter + 1] + @layers_array[counter])) }
   end
 
   def create_deltas
@@ -184,10 +169,10 @@ class NeuralNetwork
     while layer < @layers_array.size
       if layer.zero?
         @z_array[layer] = data_x
-        @a_array[layer] = @z_array[layer]
+        @a_array[layer] = @z_array.clone[layer]
       else
-        @z_array[layer] = @weights_array[layer - 1] * @a_array[layer - 1]
-        @a_array[layer] = apply_activ(@z_array[layer], @activations_array[layer])
+        @z_array[layer] = @a_array.clone[layer - 1] * @weights_array.clone[layer - 1].transpose
+        @a_array[layer] = apply_activ(@z_array.clone[layer], @activations_array[layer])
       end
       layer += 1
     end
@@ -202,54 +187,52 @@ class NeuralNetwork
   end
 
   def crossentropy_delta(data_y)
+    delta_a = []
     delta_z = []
-    delta_x = []
     delta_w = []
-    i = @layers_array.size - 1
-    while i > 0
-      tmp = []
-      j = 0
-      while j < @z_array[i].row_size
-        tmp[j] = []
-        k = 0
-        while k < @z_array[i].column_size
-          if j == k
-            tmp[j][k] = @z_array[i][j, k] * (1.0 - @z_array[i][j, k])
-          else
-            tmp[j][k] = -1.0 * @z_array[i][j, k]**2
+    layer = @layers_array.size - 1
+    while layer > 0
+      if layer == @layers_array.size - 1
+        tmp = []
+        i = 0
+        while i < @z_array[layer].row_size
+          tmp[i] = []
+          j = 0
+          while j < @z_array[layer].column_size
+            if i == j
+              tmp[i][j] = @a_array[layer][i, j] * (1.0 - @a_array[layer][i, j])
+            else
+              tmp[i][j] = -1.0 * @a_array[layer][i, j]**2
+            end
+            j += 1
           end
-          k += 1
+          i += 1
         end
-        j += 1
-      end
-      if i == @layers_array.size - 1
-        delta_z[i] = @a_array[i] - data_y
-        delta_x[i] = @weights_array[i - 1].transpose * delta_z[i].hadamard_product(@mask_array[i])
+        delta_a[layer] = (@a_array.clone[layer] - data_y).hadamard_product(Matrix[*tmp])
       else
-        delta_z[i] = delta_x[i + 1].hadamard_product(apply_activ(@a_array[i], @activations_array[i]))
-        delta_x[i] = @weights_array[i - 1].transpose * delta_z[i].hadamard_product(@mask_array[i])
+        delta_a[layer] = delta_z.clone[layer + 1].hadamard_product(apply_deriv(@a_array.clone[layer], @activations_array[layer]))
       end
-      delta_w[i - 1] = Matrix[*tmp] * delta_x[i].transpose
-      i -= 1
+      delta_z[layer] = delta_a.clone[layer].hadamard_product(@mask_array.clone[layer]) * @weights_array.clone[layer - 1]
+      delta_w[layer - 1] = @a_array.clone[layer].transpose * delta_z.clone[layer]
+      layer -= 1
     end
     delta_w
   end
 
   def mse_delta(data_y)
+    delta_a = []
     delta_z = []
-    delta_x = []
     delta_w = []
-    i = @layers_array.size - 1
-    while i > 0
-      if i == @layers_array.size - 1
-        delta_z[i] = @a_array[i] - data_y
-        delta_x[i] = @weights_array[i - 1].transpose * delta_z[i].hadamard_product(@mask_array[i])
+    layer = @layers_array.size - 1
+    while layer > 0
+      if layer == @layers_array.size - 1
+        delta_a[layer] = (data_y - @a_array.clone[layer]).hadamard_product(apply_deriv(@a_array.clone[layer], @activations_array[layer]))
       else
-        delta_z[i] = delta_x[i + 1].hadamard_product(apply_activ(@a_array[i], @activations_array[i]))
-        delta_x[i] = @weights_array[i - 1].transpose * delta_z[i].hadamard_product(@mask_array[i])
+        delta_a[layer] = delta_z.clone[layer + 1].hadamard_product(apply_deriv(@a_array.clone[layer], @activations_array[layer]))
       end
-      delta_w[i - 1] = @z_array[i] * delta_x[i].transpose
-      i -= 1
+      delta_z[layer] = delta_a.clone[layer].hadamard_product(@mask_array.clone[layer]) * @weights_array.clone[layer - 1]
+      delta_w[layer - 1] = @a_array.clone[layer].transpose * delta_z.clone[layer]
+      layer -= 1
     end
     delta_w
   end
@@ -258,31 +241,31 @@ class NeuralNetwork
     if @optimizer == 'BGD'
       layer = @weights_array.size - 1
       while layer >= 0
-        @weights_array[layer] -= @learning_rate * @delta_w_array[layer]
+        @weights_array[layer] -= @learning_rate * @delta_w_array.clone[layer]
         layer -= 1
       end
     elsif @optimizer == 'BGDwM'
       layer = @weights_array.size - 1
       while layer >= 0
-        @v_delta_w_array[layer] = @momentum[0] * @v_delta_w_array[layer] + (1.0 - @momentum[0]) * @delta_w_array[layer]
-        @weights_array[layer] -= @learning_rate * @v_delta_w_array[layer]
+        @v_delta_w_array[layer] = @momentum[0] * @v_delta_w_array.clone[layer] + (1.0 - @momentum[0]) * @delta_w_array.clone[layer]
+        @weights_array[layer] -= @learning_rate * @v_delta_w_array.clone[layer]
         layer -= 1
       end
     elsif @optimizer == 'RMSprop'
       layer = @weights_array.size - 1
       while layer >= 0
-        @s_delta_w_array[layer] = @momentum[0] * @s_delta_w_array[layer] + (1.0 - @momentum[0]) * @delta_w_array[layer].pow(2)
-        @weights_array[layer] -= @learning_rate * @delta_w_array[layer].elementwise_matrix_div(@s_delta_w_array[layer].sqrt.elementwise_var_add(10**-8))
+        @s_delta_w_array[layer] = @momentum[0] * @s_delta_w_array.clone[layer] + (1.0 - @momentum[0]) * @delta_w_array.clone[layer].pow(2)
+        @weights_array[layer] -= @learning_rate * @delta_w_array.clone[layer].elementwise_matrix_div(@s_delta_w_array.clone[layer].sqrt.elementwise_var_add(10**-8))
         layer -= 1
       end
     elsif @optimizer == 'Adam'
       layer = @weights_array.size - 1
       while layer >= 0
-        @v_delta_w_array[layer] = @momentum[0] * @v_delta_w_array[layer] + (1.0 - @momentum[0]) * @delta_w_array[layer]
-        @s_delta_w_array[layer] = @momentum[1] * @s_delta_w_array[layer] + (1.0 - @momentum[1]) * @delta_w_array[layer].pow(2)
-        @v_delta_w_array[layer] = @v_delta_w_array[layer].elementwise_var_div(1.0 - @momentum[0])
-        @s_delta_w_array[layer] = @s_delta_w_array[layer].elementwise_var_div(1.0 - @momentum[1])
-        @weights_array[layer] -= @learning_rate * @v_delta_w_array[layer].elementwise_matrix_div(@s_delta_w_array[layer].sqrt.elementwise_var_add(@momentum[2]))
+        @v_delta_w_array[layer] = @momentum[0] * @v_delta_w_array.clone[layer] + (1.0 - @momentum[0]) * @delta_w_array.clone[layer]
+        @s_delta_w_array[layer] = @momentum[1] * @s_delta_w_array.clone[layer] + (1.0 - @momentum[1]) * @delta_w_array.clone[layer].pow(2)
+        @v_delta_w_array[layer] = @v_delta_w_array.clone[layer].elementwise_var_div(1.0 - @momentum[0])
+        @s_delta_w_array[layer] = @s_delta_w_array.clone[layer].elementwise_var_div(1.0 - @momentum[1])
+        @weights_array[layer] -= @learning_rate * @v_delta_w_array.clone[layer].elementwise_matrix_div(@s_delta_w_array.clone[layer].sqrt.elementwise_var_add(@momentum[2]))
         layer -= 1
       end
     end
@@ -306,7 +289,7 @@ class NeuralNetwork
         end
         row += 1
       end
-      @a_array[layer] = @a_array[layer].hadamard_product(@mask_array[layer])
+      @a_array[layer] = @a_array.clone[layer].hadamard_product(@mask_array[layer])
       layer += 1
     end
   end

@@ -61,4 +61,16 @@ class Matrix
     end
     self
   end
+
+  def concatenate(matrix)
+    tmp1 = self.to_a
+    tmp2 = matrix.to_a
+    tmp3 = []
+    i = 0
+    while i < tmp1.size
+      tmp3[i] = tmp1[i] + tmp2[i]
+      i += 1
+    end
+    Matrix[*tmp3]
+  end
 end

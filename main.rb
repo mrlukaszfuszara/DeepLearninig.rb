@@ -5,11 +5,23 @@ require 'matrix'
 require './lib/util/splitter_mini_batch'
 require './lib/neural_network/neural_network'
 require './lib/neural_network/conv_network'
+require './lib/neural_network/recurrent_network'
 
 # require './lib/util/splitter_train_dev_test'
 require './lib/util/normalization'
 
 class Main
+  def train_seqnet(seq_x, seq_y)
+    seqnet = RecurrentNetwork.new
+    seqnet.input
+    seqnet.add_recnet(seq_x[0].size, seq_y[0].size)
+    seqnet.compile(true)
+    out_seq = seqnet.fit(seq)
+    seqnet.save_weights('./weights/weights_resnet.msh')
+    seqnet.save_architecture('./weights/arch_resnet.msh')
+    out_seq
+  end
+
   def train_conv(images_path, images)
     convnet = ConvNetwork.new
     convnet.input
@@ -31,11 +43,10 @@ class Main
 
   def train_neuralnet(data_x, data_y, epochs, iterations, cost_function, optimizer, learning_rate, decay_rate, momentum)
     neuralnet = NeuralNetwork.new
-    neuralnet.input(data_x[0].size, 'leaky_relu')
-    neuralnet.add_neuralnet(128, 'leaky_relu', 0.8)
-    neuralnet.add_neuralnet(128, 'leaky_relu', 0.6)
-    neuralnet.add_neuralnet(128, 'leaky_relu', 0.8)
-    neuralnet.add_neuralnet(data_y[0].size, 'softmax')
+    neuralnet.input(data_x[0][0].size, 'leaky_relu')
+    neuralnet.add_neuralnet(256, 'leaky_relu', 0.5)
+    neuralnet.add_neuralnet(256, 'leaky_relu', 0.5)
+    neuralnet.add_neuralnet(data_y[0][0].size, 'softmax')
     neuralnet.compile(optimizer, cost_function, learning_rate, decay_rate, momentum)
     tmp = neuralnet.fit(data_x, data_y, epochs, iterations)
     neuralnet.save_weights('./weights/weights_neuralnet.msh')
@@ -57,6 +68,7 @@ class Main
   end
 end
 
+=begin
 g = Generators.new
 
 g.generate_images_path('./dataset/images', './data/images.msh')
@@ -101,16 +113,22 @@ output = Marshal.dump(img_x)
 File.open('tmpx.msh', 'wb') { |f| f.write(output) }
 output = Marshal.dump(img_y)
 File.open('tmpy.msh', 'wb') { |f| f.write(output) }
+=end
 
 img_x = Marshal.load File.open('tmpx.msh', 'rb')
 img_y = Marshal.load File.open('tmpy.msh', 'rb')
 
-network = Main.new
+n = Normalization.new(img_x)
+n.z_score
+n.min_max_scaler
+img_x = n.matrix
+
+    network = Main.new
 epochs = 10
 iterations = 10
-optimizer = 'BGD'
+optimizer = 'Adam'
 cost_function = 'crossentropy'
-learning_rate = 0.1
+learning_rate = 0.001
 decay_rate = 1
 momentum = [0.9, 0.999, 10**-8]
 network.train_neuralnet(img_x, img_y, epochs, iterations, cost_function, optimizer, learning_rate, decay_rate, momentum)

@@ -1,3 +1,5 @@
+require './lib/neural_network/network'
+
 require './lib/util/matrix_math'
 require './lib/util/conv_math'
 require './lib/util/generators'
@@ -5,7 +7,7 @@ require './lib/util/activations'
 
 require './lib/util/image_loader'
 
-class ConvNetwork
+class ConvNetwork < Network
   def initialize
     @convmath = ConvMath.new
 
@@ -63,6 +65,8 @@ class ConvNetwork
   end
 
   def fit(path_to_files, files)
+    puts 'Lets start!'
+
     img_load = ImageLoader.new
 
     element = 0
@@ -102,35 +106,20 @@ class ConvNetwork
   end
 
   def save_weights(path)
-    serialized_array = Marshal.dump(@weights_array)
-    File.open(path, 'wb') { |f| f.write(serialized_array) }
-    File.open(path + '.sha512', 'w') { |f| f.write(Digest::SHA512.file(path)) }
+    save_data(path, @weights_array)
   end
 
   def save_architecture(path)
-    serialized_array = Marshal.dump([@activations_array, @pool_array, @channels_array, @filters_array, @paddings_array, @strides_array])
-    File.open(path, 'wb') { |f| f.write(serialized_array) }
-    File.open(path + '.sha512', 'w') { |f| f.write(Digest::SHA512.file(path)) }
+    save_data(path, [@activations_array, @pool_array, @channels_array, @filters_array, @paddings_array, @strides_array])
   end
 
   def load_weights(key, path)
-    tmp = nil
-    if File.read(key) == Digest::SHA512.file(path).to_s
-      tmp = Marshal.load File.open(path, 'rb')
-    else
-      puts 'SHA512 sum does not match'
-    end
-
+    tmp = load_data(key, path)
     @weights_array = tmp
   end
 
   def load_architecture(key, path)
-    tmp = nil
-    if File.read(key) == Digest::SHA512.file(path).to_s
-      tmp = Marshal.load File.open(path, 'rb')
-    else
-      puts 'SHA512 sum does not match'
-    end
+    tmp = load_data(key, path)
 
     @channels_array = tmp[2]
     layers = @channels_array.size
@@ -141,7 +130,7 @@ class ConvNetwork
     @filters_array = tmp[3]
     @paddings_array = tmp[4]
     @strides_array = tmp[5]
-    
+
     i = 0
     while i < layers
       add_convnet(@activations_array[layer], @channels_array[layer], @filters_array[layer], @paddings_array[layer], @strides_array[layer])
