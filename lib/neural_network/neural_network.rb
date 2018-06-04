@@ -18,14 +18,14 @@ class NeuralNetwork < Network
     @weights_array = []
   end
 
-  def input(batch_size, activation)
-    add_neuralnet(batch_size, activation)
+  def input(batch_size)
+    add_neuralnet(batch_size)
   end
 
-  def add_neuralnet(batch_size, activation, dropout = 1.0)
+  def add_neuralnet(batch_size, activation = 'nil', dropout = 0.0)
     @layers_array << batch_size
     @activations_array << activation
-    @dropouts_array << dropout
+    @dropouts_array << 1.0 - dropout
   end
 
   def compile(optimizer, cost_function, learning_rate, decay_rate = 1, momentum = [0.9, 0.999, 10**-8])
@@ -193,27 +193,12 @@ class NeuralNetwork < Network
     layer = @layers_array.size - 1
     while layer > 0
       if layer == @layers_array.size - 1
-        tmp = []
-        i = 0
-        while i < @z_array[layer].row_size
-          tmp[i] = []
-          j = 0
-          while j < @z_array[layer].column_size
-            if i == j
-              tmp[i][j] = @a_array[layer][i, j] * (1.0 - @a_array[layer][i, j])
-            else
-              tmp[i][j] = -1.0 * @a_array[layer][i, j]**2
-            end
-            j += 1
-          end
-          i += 1
-        end
-        delta_a[layer] = (@a_array.clone[layer] - data_y).hadamard_product(Matrix[*tmp])
+        delta_a[layer] = (data_y - @a_array.clone[layer]).hadamard_product(apply_deriv(@a_array.clone[layer], @activations_array[layer]))
       else
         delta_a[layer] = delta_z.clone[layer + 1].hadamard_product(apply_deriv(@a_array.clone[layer], @activations_array[layer]))
       end
       delta_z[layer] = delta_a.clone[layer].hadamard_product(@mask_array.clone[layer]) * @weights_array.clone[layer - 1]
-      delta_w[layer - 1] = @a_array.clone[layer].transpose * delta_z.clone[layer]
+      delta_w[layer - 1] = (1.0 / @a_array[layer].row_size) * @a_array.clone[layer].transpose * delta_z.clone[layer]
       layer -= 1
     end
     delta_w
@@ -231,7 +216,7 @@ class NeuralNetwork < Network
         delta_a[layer] = delta_z.clone[layer + 1].hadamard_product(apply_deriv(@a_array.clone[layer], @activations_array[layer]))
       end
       delta_z[layer] = delta_a.clone[layer].hadamard_product(@mask_array.clone[layer]) * @weights_array.clone[layer - 1]
-      delta_w[layer - 1] = @a_array.clone[layer].transpose * delta_z.clone[layer]
+      delta_w[layer - 1] = (1.0 / @a_array[layer].row_size) * @a_array.clone[layer].transpose * delta_z.clone[layer]
       layer -= 1
     end
     delta_w
@@ -289,7 +274,7 @@ class NeuralNetwork < Network
         end
         row += 1
       end
-      @a_array[layer] = @a_array.clone[layer].hadamard_product(@mask_array[layer])
+      @a_array[layer] = @a_array.clone[layer].hadamard_product(@mask_array.clone[layer])
       layer += 1
     end
   end
@@ -322,8 +307,8 @@ class NeuralNetwork < Network
       tmp = @activation.relu_d(layer)
     elsif activation == 'leaky_relu'
       tmp = @activation.leaky_relu_d(layer)
-    elsif activation == 'nil'
-      tmp = layer
+    elsif activation == 'softmax'
+      tmp = @activation.softmax_d(layer)
     end
     tmp
   end

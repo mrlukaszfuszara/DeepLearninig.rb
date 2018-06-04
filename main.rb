@@ -25,14 +25,14 @@ class Main
   def train_conv(images_path, images)
     convnet = ConvNetwork.new
     convnet.input
-    convnet.add_convnet('leaky_relu', 24, 11, 1, 4)
-    convnet.add_maxpool(2, 0, 2)
-    convnet.add_convnet('leaky_relu', 64, 3, 1, 2)
-    convnet.add_maxpool(3, 0, 3)
-    convnet.add_convnet('leaky_relu', 64, 3, 2, 1)
-    convnet.add_convnet('leaky_relu', 64, 3, 2, 1)
-    convnet.add_convnet('leaky_relu', 32, 3, 2, 1)
-    convnet.add_maxpool(2, 0, 2)
+    convnet.add_convnet('leaky_relu', 48, 8, 0, 4)
+    convnet.add_maxpool(3, 0, 2)
+    convnet.add_convnet('leaky_relu', 128, 4, 2, 1)
+    convnet.add_maxpool(3, 0, 2)
+    convnet.add_convnet('leaky_relu', 196, 4, 1, 1)
+    convnet.add_convnet('leaky_relu', 196, 4, 1, 1)
+    convnet.add_convnet('leaky_relu', 128, 4, 1, 1)
+    convnet.add_maxpool(3, 0, 2)
     convnet.compile
     convnet.fit(images_path, images)
     img_x = convnet.return_flatten
@@ -43,7 +43,7 @@ class Main
 
   def train_neuralnet(data_x, data_y, epochs, iterations, cost_function, optimizer, learning_rate, decay_rate, momentum)
     neuralnet = NeuralNetwork.new
-    neuralnet.input(data_x[0][0].size, 'leaky_relu')
+    neuralnet.input(data_x[0][0].size)
     neuralnet.add_neuralnet(256, 'leaky_relu', 0.5)
     neuralnet.add_neuralnet(256, 'leaky_relu', 0.5)
     neuralnet.add_neuralnet(data_y[0][0].size, 'softmax')
@@ -58,6 +58,8 @@ class Main
     convnet = ConvNetwork.new
     convnet.load_architecture('./weights/arch_convnet.msh.sha512', './weights/arch_convnet.msh')
     convnet.load_weights('./weights/weights_convnet.msh.sha512', './weights/weights_convnet.msh')
+    convnet.predict(images_path, images)
+    convnet.return_flatten
   end
 
   def predict_neuralnet(data_x, data_y)
@@ -68,7 +70,6 @@ class Main
   end
 end
 
-=begin
 g = Generators.new
 
 g.generate_images_path('./dataset/images', './data/images.msh')
@@ -103,7 +104,7 @@ end
 g = Generators.new
 img_y = g.one_hot_vector(g.tags_to_numbers(img_y))
 
-batch_size = 32
+batch_size = 12
 
 smb = SplitterMiniBatch.new(img_x, img_y, batch_size)
 img_x = smb.x
@@ -113,7 +114,6 @@ output = Marshal.dump(img_x)
 File.open('tmpx.msh', 'wb') { |f| f.write(output) }
 output = Marshal.dump(img_y)
 File.open('tmpy.msh', 'wb') { |f| f.write(output) }
-=end
 
 img_x = Marshal.load File.open('tmpx.msh', 'rb')
 img_y = Marshal.load File.open('tmpy.msh', 'rb')
@@ -123,7 +123,7 @@ n.z_score
 n.min_max_scaler
 img_x = n.matrix
 
-    network = Main.new
+network = Main.new
 epochs = 10
 iterations = 10
 optimizer = 'Adam'

@@ -95,6 +95,22 @@ class ConvNetwork < Network
     end
   end
 
+  def predict(path_to_files, files)
+    img_load = ImageLoader.new
+
+    element = 0
+    while element < files.size
+      @z_array = []
+      @a_array = []
+
+      img = img_load.load_image(path_to_files + '\\' + files[element])
+
+      forward_propagation(img)
+
+      @elements_array << @a_array.last
+    end
+  end
+
   def return_flatten
     tmp = []
     element = 0
@@ -150,7 +166,7 @@ class ConvNetwork < Network
         array[ch][j] = []
         k = 0
         while k < @filters_array[i]
-          array[ch][j][k] = rand(-0.01..0.01)
+          array[ch][j][k] = rand(-1..1)
           k += 1
         end
         j += 1
@@ -187,6 +203,7 @@ class ConvNetwork < Network
           @a_array[layer] = @z_array[layer]
         end
       end
+      p @a_array[layer]
       layer += 1
     end
   end

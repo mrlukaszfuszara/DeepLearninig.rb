@@ -2,8 +2,8 @@ require './lib/util/matrix_math'
 
 class Costs
   def mse_cost(data_y_hat, data_y)
-    data_y = data_y.to_a
-    data_y_hat = data_y_hat.to_a
+    data_y = data_y.to_a.transpose
+    data_y_hat = data_y_hat.to_a.transpose
     array = []
     i = 0
     while i < data_y_hat.size
@@ -20,8 +20,8 @@ class Costs
   end
 
   def crossentropy_cost(data_y_hat, data_y)
-    data_y = data_y.to_a
-    data_y_hat = data_y_hat.to_a
+    data_y = data_y.to_a.transpose
+    data_y_hat = data_y_hat.to_a.transpose
     array = []
     i = 0
     while i < data_y.size

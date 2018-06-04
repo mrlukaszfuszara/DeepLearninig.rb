@@ -21,6 +21,24 @@ class Activations
     Matrix[*array]
   end
 
+  def softmax_d(matrix)
+    array = matrix.clone.to_a
+    i = 0
+    while i < array.size
+      j = 0
+      while j < array[i].size
+        if i == j
+          array[i][j] = -1.0 + array[i][j]
+        else
+          array[i][j] = -1.0 * array[i][j]
+        end
+        j += 1
+      end
+      i += 1
+    end
+    Matrix[*array]
+  end
+
   def tanh(matrix)
     matrix.map { |e| (Math.exp(e) - Math.exp(-e)) / Math.exp(e) + Math.exp(-e) }
   end

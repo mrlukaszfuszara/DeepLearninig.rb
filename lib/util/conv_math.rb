@@ -23,6 +23,22 @@ class ConvMath
     volume
   end
 
+  def conv2d(volume, filter, stride)
+    filter_size = filter[0].size
+    filter = fft_matrix(filter)
+    splice_with_stride(volume, filter_size, stride) { |e| (ifft_matrix((Matrix[*fft_matrix(e)].hadamard_product(Matrix[*filter])).to_a)).flatten.inject(:+) }
+  end
+
+  def max_pooling(volume, filter, stride)
+    filter_size = filter
+    splice_with_stride(volume, filter_size, stride) { |e| e.to_a.flatten.max }
+  end
+
+  def avg_pooling(volume, filter, stride)
+    filter_size = filter
+    splice_with_stride(volume, filter_size, stride) { |e| e.to_a.flatten.inject(:+) / e.size }
+  end
+
   def sum_channels(volume)
     array = []
     i = 0
@@ -48,22 +64,55 @@ class ConvMath
     array
   end
 
-  def conv2d(volume, filter, stride)
-    filter_size = filter[0].size
-    splice_with_stride(volume, filter_size, stride) { |e| Matrix[*e].hadamard_product(Matrix[*filter]).to_a.flatten.inject(:+) }
-  end
-
-  def max_pooling(volume, filter, stride)
-    filter_size = filter
-    splice_with_stride(volume, filter_size, stride) { |e| e.to_a.flatten.max }
-  end
-
-  def avg_pooling(volume, filter, stride)
-    filter_size = filter
-    splice_with_stride(volume, filter_size, stride) { |e| e.to_a.flatten.inject(:+) / e.size }
-  end
-
   private
+
+  def fft_matrix(matrix)
+    array = []
+    i = 0
+    while i < matrix.size
+      array[i] = fft(matrix[i])
+      i += 1
+    end
+    array
+  end
+
+  def ifft_matrix(matrix)
+    array = []
+    i = 0
+    while i < matrix.size
+      array[i] = ifft(matrix[i])
+      i += 1
+    end
+    array
+  end
+
+  def fft(array)
+    n = array.size
+    return array if n <= 1
+
+    even_vals = array.values_at(* array.each_index.select {|i| i.even?})
+    odd_vals = array.values_at(* array.each_index.select {|i| i.odd?})
+
+    fft(even_vals)
+    fft(odd_vals)
+
+    k = 0
+    while k < n / 2
+      t = Complex.polar(1.0, -2.0 * Math::PI * k / n) * odd_vals[k]
+      array[k] = even_vals[k] + t
+      array[k + n / 2] = even_vals[k] - t
+      k += 1
+    end
+    array
+  end
+
+  def ifft(array)
+    tmp = array.map { |e| e.conj }
+    tmp = fft(tmp)
+    tmp = tmp.map { |e| e.conj }
+    tmp = tmp.map { |e| e / array.size }
+    tmp.map { |e| e.abs }
+  end
 
   def splice_with_stride(volume, chunk, stride)
     array = []
